@@ -1,0 +1,11 @@
+name: Commit Check
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  convco-commit-check:
+    uses: datamole-ai/core-mle-git-workflow/.github/workflows/convco-commit-check.yaml@main
+    with:
+      min_commit_hash: 32c6d2e
