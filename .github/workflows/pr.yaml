@@ -1,0 +1,12 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  pr-title-check:
+    uses: datamole-ai/core-mle-git-workflow/.github/workflows/convco-pr-title-check.yaml@main
+  dismiss-stale-pr-reviews:
+    uses: datamole-ai/core-mle-git-workflow/.github/workflows/dismiss-stale-pr-reviews.yaml@main
