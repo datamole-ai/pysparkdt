@@ -52,7 +52,7 @@ jobs:
         run: |
           poetry run ruff check .
           poetry run ruff format --check .
-          poetry run pytest -m .
+          poetry run pytest .
 
   publish:
     runs-on: ubuntu-22.04  # convco needs GLIBC_2.32 which is not in 20.04
