@@ -6,8 +6,8 @@ env:
   PYTHON_VERSION: 3.10.12
   CHANGELOG_FILE: CHANGELOG.md
   FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
-  CONVCO_VERSION: v0.4.1
-  POETRY_VERSION: 1.7.0
+  CONVCO_VERSION: v0.5.0
+  POETRY_VERSION: 1.8.2
   PACKAGE_NAME: "dtml-dbx-pyspark-testing"
 
 jobs:
@@ -15,18 +15,16 @@ jobs:
   tests:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Bootstrap poetry
-        env:
-          POETRY_VERSION: "1.7.0"
         run: |
           curl -sL https://install.python-poetry.org | python - -y
 
@@ -37,7 +35,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: venv-cache
         with:
           path: .venv/
@@ -65,7 +63,7 @@ jobs:
     # - image pull of python-runtime is slower than installation of poetry
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install poetry
