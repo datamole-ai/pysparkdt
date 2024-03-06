@@ -1,0 +1,131 @@
+name: Dynamic Pipeline
+
+on: [push]
+
+env:
+  PYTHON_VERSION: 3.10.12
+  CHANGELOG_FILE: CHANGELOG.md
+  FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
+  CONVCO_VERSION: v0.5.0
+  POETRY_VERSION: 1.8.2
+  PACKAGE_NAME: "dtml-dbx-pyspark-testing"
+
+jobs:
+
+  tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Bootstrap poetry
+        run: |
+          curl -sL https://install.python-poetry.org | python - -y
+
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        id: venv-cache
+        with:
+          path: .venv/
+          key: poetry-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.venv-cache.outputs.cache-hit != 'true'
+        run: |
+          poetry env use ${{ env.PYTHON_VERSION }}
+          poetry install
+
+      - name: Run checks
+        run: |
+          poetry run ruff check .
+          poetry run ruff format --check .
+          poetry run pytest .
+
+  publish:
+    runs-on: ubuntu-22.04  # convco needs GLIBC_2.32 which is not in 20.04
+    # Do not use core-tools-python-runtime because:
+    # - it doesn't have preinstalled GH CLI and GH CLI installation takes
+    #   longer than installation of poetry
+    # - there are issues with using convco in python-runtime:
+    #   GitHub writes: Error: Could not open the git repository.
+    # - image pull of python-runtime is slower than installation of poetry
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+      - name: Install convco
+        run: |
+          curl -sSfL "https://github.com/convco/convco/releases/download/${{ env.CONVCO_VERSION }}/convco-ubuntu.zip" | zcat > /usr/local/bin/convco
+          chmod +x /usr/local/bin/convco
+      - name: Set variables
+        run: |
+          base_version_command="
+            convco
+            version
+            --prefix=${{ env.PACKAGE_NAME }}/
+            --paths=packages/${{ env.PACKAGE_NAME }}
+          "
+          old_version=$($base_version_command)
+          if [ $old_version = "0.0.0" ]; then # i.e. there is no version yet
+            new_version="1.0.0"
+          else
+            new_version=$($base_version_command --bump)
+          fi
+          new_tag=${{ env.PACKAGE_NAME }}/"$new_version"
+          package_path=.
+          echo "OLD_VERSION=$old_version" >> $GITHUB_ENV
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+          echo "PACKAGE_PATH=$package_path" >> $GITHUB_ENV
+          echo "old version: $old_version"
+          echo "new version: $new_version"
+          echo "new tag: $new_tag"
+          echo "packages path: $package_path"
+      - name: Release and publish
+        if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ########################################
+          # Generate changelogs
+          ########################################
+          base_changelog_command="
+            convco
+            changelog
+            --prefix=${{ env.PACKAGE_NAME }}/
+            --paths=${{ env.PACKAGE_PATH }}
+            --unreleased=${{ env.NEW_TAG }}
+          "
+          $base_changelog_command --max-versions=1 > ${{ env.CHANGELOG_FILE }}
+          $base_changelog_command > ${{ env.FULL_CHANGELOG_FILE }}
+          ########################################
+          # Create GitHub Release
+          ########################################
+          gh release create \
+            ${{ env.NEW_TAG }} \
+            --title ${{ env.NEW_TAG }} \
+            --notes-file ${{ env.CHANGELOG_FILE }} \
+            ${{ env.FULL_CHANGELOG_FILE }}
+          ########################################
+          # Publish to JFrog
+          ########################################
+          cd ${{ env.PACKAGE_PATH }}
+          poetry version ${{ env.NEW_VERSION }}
+          poetry config repositories.dtml "https://datamole.jfrog.io/artifactory/api/pypi/pypi-general-local"
+          poetry config http-basic.dtml "" ${{ secrets.JFROG_SERVICE_JWT }}
+          poetry publish --build -r dtml
