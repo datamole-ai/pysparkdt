@@ -78,7 +78,9 @@ jobs:
             convco
             version
             --prefix=${{ env.PACKAGE_NAME }}/
-            --paths=packages/${{ env.PACKAGE_NAME }}
+            --paths=dtml
+            --paths=pyproject.toml
+            --paths=poetry.lock
           "
           old_version=$($base_version_command)
           if [ $old_version = "0.0.0" ]; then # i.e. there is no version yet
