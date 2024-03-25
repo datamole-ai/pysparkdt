@@ -2,37 +2,7 @@ import json
 import os
 
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    BinaryType,
-    BooleanType,
-    ByteType,
-    DateType,
-    DecimalType,
-    DoubleType,
-    FloatType,
-    IntegerType,
-    LongType,
-    ShortType,
-    StringType,
-    TimestampType,
-)
-
-# A mapping from type names in the JSON schema to PySpark types
-TYPE_MAPPING = {
-    'StringType': StringType,
-    'BinaryType': BinaryType,
-    'BooleanType': BooleanType,
-    'DateType': DateType,
-    'TimestampType': TimestampType,
-    'DecimalType': DecimalType,
-    'DoubleType': DoubleType,
-    'FloatType': FloatType,
-    'ByteType': ByteType,
-    'IntegerType': IntegerType,
-    'LongType': LongType,
-    'ShortType': ShortType,
-    # Add other types as needed
-}
+from pyspark.sql.types import StructType
 
 
 def reinit_local_metastore(
@@ -45,25 +15,35 @@ def reinit_local_metastore(
     For each delta table there should be <table_name>.ndjson file in the
     directory specified by json_tables_dir parameter. Optionally, there can
     also be the schema file under <json_tables_dir>/schema/<table_name>.json.
+    The format of the schema file is defined by PySpark StructType json
+    representation.
 
-    The format of the schema file:
-        [
-          {
-            "name": "id",
-            "type": "LongType"
-          },
-          {
-            "name": "name",
-            "type": "StringType"
-          },
-          ...
-        ]
+    A schema file for a loaded DataFrame "df" can be created using:
+        with(open(new_schema_file_path, 'w')) as file:
+            file.write(json.dumps(df.schema.jsonValue(), indent=4))
 
-    The mapping from type names in the schema json to PySpark types is
-    defined by TYPE_MAPPING.
+    Example of a schema file:
+        {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "nullable": true,
+                    "metadata": {}
+                },
+                ...
+                {
+                    "name": "time",
+                    "type": "timestamp",
+                    "nullable": true,
+                    "metadata": {}
+                }
+            ]
+        }
 
-    As a part of the re-initialization it clears all existing tables before
-    initializing the new ones.
+    As a part of the re-initialization all existing tables are dropped before
+    the new ones are initialized.
 
     Parameters
     ----------
@@ -88,25 +68,23 @@ def reinit_local_metastore(
         data_path = f'{json_tables_dir}/{table_file}'
         schema_path = f'{json_tables_dir}/schema/{table_name}.json'
 
-        schema_mapping = {}
         if os.path.exists(schema_path):
+            # Read the JSON schema from the file as dictionary
             with open(schema_path, 'r') as schema_file:
-                schema_json = json.load(schema_file)
+                schema_dict = json.load(schema_file)
 
-            schema_mapping = {
-                field['name']: (TYPE_MAPPING[field['type']]())
-                for field in schema_json
-            }
+            # Load the schema from the dictionary
+            schema = StructType.fromJson(schema_dict)
+        else:
+            schema = None
 
-        # Read JSON with inferred schema or partial custom schema
-        df = (
-            spark.read.format('json')
-            .option('inferSchema', True)
-            .load(data_path)
-        )
-
-        # Apply schema types to the DataFrame
-        for column_name, column_type in schema_mapping.items():
-            df = df.withColumn(column_name, df[column_name].cast(column_type))
+        # Read table with appropriate schema - custom if the schema file is
+        # present, inferred otherwise
+        query = spark.read.format('json')
+        if schema is not None:
+            query = query.schema(schema)
+        else:
+            query = query.option('inferSchema', True)
+        df = query.load(data_path)
 
         df.write.format('delta').saveAsTable(table_name)
