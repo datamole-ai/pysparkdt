@@ -54,6 +54,7 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
             'spark.sql.catalog.spark_catalog',
             'org.apache.spark.sql.delta.catalog.DeltaCatalog',
         )
+        .config('spark.sql.session.timeZone', 'UTC')
     )
 
     # Create spark context
