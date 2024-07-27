@@ -12,7 +12,7 @@ name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
-python = "3.10.12"
+python = "^3.10.12"
 pyspark = "^3.5.0"
 delta-spark = "^3.0.0"
 
