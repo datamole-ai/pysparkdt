@@ -5,8 +5,31 @@ on:
     branches: [main]
     types: [opened, edited, reopened, synchronize]
 
+env:
+  CONVCO_VERSION: v0.6.1
+
 jobs:
-  pr-title-check:
-    uses: datamole-ai/core-mle-git-workflow/.github/workflows/convco-pr-title-check.yaml@main
+  pr-convco-title-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install convco
+        run: |
+          curl -sSfL "https://github.com/convco/convco/releases/download/${{ env.CONVCO_VERSION }}/convco-ubuntu.zip" | zcat > /usr/local/bin/convco
+          chmod +x /usr/local/bin/convco
+      - name: Check PR Title is Conventional
+        run: echo "${{ github.event.pull_request.title }}" | convco check --from-stdin
   dismiss-stale-pr-reviews:
-    uses: datamole-ai/core-mle-git-workflow/.github/workflows/dismiss-stale-pr-reviews.yaml@main
+    runs-on: ubuntu-22.04
+    if: github.event.action == 'edited'
+    steps:
+      - name: Auth. Github-CLI
+        run: echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
+        shell: bash
+      - name: Dismiss approvals
+        run: |
+          gh api "repos/${{ github.repository }}/pulls/${{ github.event.number }}/reviews" \
+            --jq '.[] | select(.state == "APPROVED") | .id' \
+            | xargs -I '{}' gh api --method=PUT -f message="Dismissed due to PR edit." \
+            "repos/${{ github.repository }}/pulls/${{ github.event.number }}/reviews/{}/dismissals"
+        shell: bash
