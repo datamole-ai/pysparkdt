@@ -5,6 +5,7 @@ on: [push]
 env:
   CHANGELOG_FILE: CHANGELOG.md
   FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
+  README_FILE: README.md
   CONVCO_VERSION: v0.6.1
   POETRY_VERSION: 1.8.2
   PACKAGE_NAME: "pysparkdt"
@@ -81,6 +82,7 @@ jobs:
             --paths=${{ env.PACKAGE_PATH }}
             --paths=pyproject.toml
             --paths=poetry.lock
+            --paths=${{ env.README_FILE }}
           "
           old_version=$($base_version_command)
           if [ $old_version = "0.0.0" ]; then # i.e. there is no version yet
@@ -108,6 +110,9 @@ jobs:
             changelog
             --prefix=${{ env.PACKAGE_NAME }}/
             --paths=${{ env.PACKAGE_PATH }}
+            --paths=pyproject.toml
+            --paths=poetry.lock
+            --paths=${{ env.README_FILE }}
             --unreleased=${{ env.NEW_TAG }}
           "
           $base_changelog_command --max-versions=1 > ${{ env.CHANGELOG_FILE }}
