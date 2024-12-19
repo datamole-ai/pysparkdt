@@ -59,7 +59,10 @@ jobs:
   publish:
     runs-on: ubuntu-22.04
     needs: tests
-    if: github.ref == 'refs/heads/main'
+#    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
