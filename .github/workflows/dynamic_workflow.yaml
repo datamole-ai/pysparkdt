@@ -59,7 +59,6 @@ jobs:
   publish:
     runs-on: ubuntu-22.04
     needs: tests
-#    if: github.ref == 'refs/heads/main'
     permissions:
       id-token: write
       contents: write
@@ -96,7 +95,7 @@ jobs:
           echo "old version: $old_version"
           echo "new version: $new_version"
           echo "new tag: $new_tag"
-      - name: Release and publish
+      - name: Release and build
         if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -127,4 +126,5 @@ jobs:
           poetry version ${{ env.NEW_VERSION }}
           poetry build
       - name: Publish
+        if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
         uses: pypa/gh-action-pypi-publish@release/v1
