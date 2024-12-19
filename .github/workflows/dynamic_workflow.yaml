@@ -3,17 +3,20 @@ name: Dynamic Pipeline
 on: [push]
 
 env:
-  PYTHON_VERSION: 3.10.12
   CHANGELOG_FILE: CHANGELOG.md
   FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
-  CONVCO_VERSION: v0.5.0
+  CONVCO_VERSION: v0.6.1
   POETRY_VERSION: 1.8.2
-  PACKAGE_NAME: "dtml-dbx-pyspark-testing"
+  PACKAGE_NAME: "pysparkdt"
+  PACKAGE_PATH: "pysparkdt"
 
 jobs:
 
   tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Bootstrap poetry
         run: |
@@ -39,12 +42,12 @@ jobs:
         id: venv-cache
         with:
           path: .venv/
-          key: poetry-${{ hashFiles('poetry.lock') }}
+          key: poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         if: steps.venv-cache.outputs.cache-hit != 'true'
         run: |
-          poetry env use ${{ env.PYTHON_VERSION }}
+          poetry env use ${{ matrix.python-version }}
           poetry install
 
       - name: Run checks
@@ -54,13 +57,8 @@ jobs:
           poetry run pytest .
 
   publish:
-    runs-on: ubuntu-22.04  # convco needs GLIBC_2.32 which is not in 20.04
-    # Do not use core-tools-python-runtime because:
-    # - it doesn't have preinstalled GH CLI and GH CLI installation takes
-    #   longer than installation of poetry
-    # - there are issues with using convco in python-runtime:
-    #   GitHub writes: Error: Could not open the git repository.
-    # - image pull of python-runtime is slower than installation of poetry
+    runs-on: ubuntu-22.04
+    needs: tests
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +76,7 @@ jobs:
             convco
             version
             --prefix=${{ env.PACKAGE_NAME }}/
-            --paths=dtml
+            --paths=${{ env.PACKAGE_PATH }}
             --paths=pyproject.toml
             --paths=poetry.lock
           "
@@ -89,15 +87,12 @@ jobs:
             new_version=$($base_version_command --bump)
           fi
           new_tag=${{ env.PACKAGE_NAME }}/"$new_version"
-          package_path=.
           echo "OLD_VERSION=$old_version" >> $GITHUB_ENV
           echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
           echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
-          echo "PACKAGE_PATH=$package_path" >> $GITHUB_ENV
           echo "old version: $old_version"
           echo "new version: $new_version"
           echo "new tag: $new_tag"
-          echo "packages path: $package_path"
       - name: Release and publish
         if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
         env:
@@ -126,8 +121,7 @@ jobs:
           ########################################
           # Publish to JFrog
           ########################################
-          cd ${{ env.PACKAGE_PATH }}
           poetry version ${{ env.NEW_VERSION }}
-          poetry config repositories.dtml "https://datamole.jfrog.io/artifactory/api/pypi/pypi-general-local"
-          poetry config http-basic.dtml "" ${{ secrets.JFROG_SERVICE_JWT }}
-          poetry publish --build -r dtml
+          poetry build
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,42 +1,47 @@
 [tool.poetry]
-name = "dtml-dbx-pyspark-testing"
+name = "pysparkdt"
 version = "0" # DO NOT CHANGE - managed by Git tags and CI
-description = "Package for simplifying local testing of pyspark DBX pipelines."
-authors = ["MLE <mlengineering@datamole.ai>"]
-packages = [
-    { include = "dtml" },
-]
+license = "MIT"
+repository = "https://github.com/datamole-ai/pysparkdt"
+description = "An open-source Python library for simplifying local testing of Databricks workflows that use PySpark and Delta tables."
+authors = ["Juraj Pall <juraj.pall@datamole.ai>"]
+exclude = ["tests"]
+readme = "README.md"
 
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
-python = "^3.10.12"
-pyspark = "^3.5.0"
+python = ">=3.8, <3.13"
+pyspark = { version = "^3.5.0", extras = ["sql"] }
 delta-spark = "^3.0.0"
+numpy = [
+    { version = ">=1.26.0", python = ">=3.9" },
+    { version = "<1.26.0", python = ">=3.8, <3.9" }
+]
+setuptools = { version = "^75.6.0", python = ">=3.12,<3.13" }  # Necessary for Python 3.12 as distutils is missing without it
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.3.0"
-pytest = "^8.0.2"
-pytest-mock = "^3.12.0"
+ruff = "^0.8.3"
+pytest = "^8.3.4"
+pytest-mock = "^3.14.0"
 
 [tool.ruff]
 line-length = 79
-target-version = "py310"
-select = [
+target-version = "py38"
+lint.select = [
     "E",
     "F",
     "N",
     "W",
     "I001",
 ]
-src = ["task"]
 
 [tool.ruff.format]
 quote-style = "single"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
 "*/**" = ["E402"]
 
