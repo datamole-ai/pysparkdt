@@ -77,7 +77,6 @@ sys.path.append(MODULE_DIR.as_posix())
 
 # COMMAND ----------
 
-import os
 from myjobpackage.processing import process_data
 
 # COMMAND ----------
@@ -197,7 +196,7 @@ location.
 
 ```python
 from pytest import fixture
-from dtml.dbx.pysparktesting import spark_base
+from pysparkdt import spark_base
 
 @fixture(scope='module')
 def spark():
@@ -218,7 +217,7 @@ metastore tables.*
 
 ```python
 from myjobpackage.processing import process_data
-from dtml.dbx.pysparktesting import reinit_local_metastore
+from pysparkdt import reinit_local_metastore
 from pyspark.testing import assertDataFrameEqual
 
 def test_process_data(
