@@ -1,5 +1,24 @@
 # pysparkdt (PySpark Delta Testing)
 
+<p align="center">
+    <a href="https://pypi.org/project/pysparkdt">
+        <img src="https://img.shields.io/pypi/pyversions/pysparkdt.svg?color=%2334D058"
+             alt="Supported Python versions">
+    </a>
+    <a href="https://pypi.org/project/pysparkdt" target="_blank">
+        <img src="https://img.shields.io/pypi/v/pysparkdt?color=%2334D058&label=pypi%20package"
+             alt="Package version">
+    </a>
+    <a href="https://pypi.org/project/pysparkdt">
+        <img alt="PyPI - Downloads"
+             src="https://img.shields.io/pypi/dm/pysparkdt.svg?label=PyPI%20downloads">
+    </a>
+    <a href="https://github.com/astral-sh/ruff">
+        <img alt="Ruff"
+             src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json">
+    </a>
+</p>
+
 **An open-source Python library for simplifying local testing of Databricks 
 workflows using PySpark and Delta tables.**
 
