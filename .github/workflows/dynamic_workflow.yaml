@@ -55,7 +55,7 @@ jobs:
         run: |
           poetry run ruff check .
           poetry run ruff format --check .
-          poetry run pytest .
+          poetry run pytest tests
 
   publish:
     runs-on: ubuntu-22.04

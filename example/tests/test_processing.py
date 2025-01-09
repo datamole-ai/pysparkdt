@@ -1,12 +1,11 @@
 import os
 
+from myjobpackage.processing import process_data
 from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
-
-from .processing import process_data
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
 JSON_TABLES_DIR = f'{DATA_DIR}/tables'
@@ -24,7 +23,7 @@ def test_process_data(
 ):
     reinit_local_metastore(spark, JSON_TABLES_DIR)
     process_data(
-        session=spark,
+        spark=spark,
         input_table='example_input',
         output_table='output',
     )

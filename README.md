@@ -106,7 +106,7 @@ output_table = dbutils.widgets.get('output_table')
 # COMMAND ----------
 
 process_data(
-    session=spark,
+    spark=spark,
     input_table=input_table,
     output_table=output_table,
 )
@@ -121,17 +121,17 @@ process_data(
 myjobpackage
 ├── __init__.py
 ├── entrypoint.py  # Databricks Notebook
-├── processing.py
-└── tests
-    ├── __init__.py
-    ├── test_processing.py
-    └── data
-        ├── tables
-            ├── example_input.ndjson
-            └── expected_output.ndjson
-            └── schema
-                ├── example_input.json
-                └── expected_output.json
+└── processing.py
+tests
+├── __init__.py
+├── test_processing.py
+└── data
+    └── tables
+        ├── example_input.ndjson
+        ├── expected_output.ndjson
+        └── schema
+            ├── example_input.json
+            └── expected_output.json
 ```
 
 **Data Format**
@@ -245,7 +245,7 @@ def test_process_data(
     reinit_local_metastore(spark, JSON_TABLES_DIR)
     
     process_data(
-        session=spark,
+        spark=spark,
         input_table='example_input',
         output_table='output',
     )
@@ -264,6 +264,8 @@ def test_process_data(
  columns does not matter. By default, the order of rows does not matter in 
  `assertDataFrameEqual` (this can be adjusted using the `checkRowOrder` 
  parameter).
+
+**ℹ️ For complete example, please look at [example](https://github.com/datamole-ai/pysparkdt/blob/main/example).**
 
 **⚠️ Note on running tests in parallel**
 
@@ -296,11 +298,12 @@ the processing function.
 
 ```python
 def process_data(
+    spark: SparkSession,
     input_table: str, 
     output_table: str, 
     checkpoint_location: str,
-) -> StreamingQuery
-  load_query = session.readStream.format('delta').table(input_table)
+) -> StreamingQuery:
+  load_query = spark.readStream.format('delta').table(input_table)
     
   def process_batch(df: pyspark.sql.DataFrame, _) -> None:
       ... process df ...
@@ -323,7 +326,7 @@ def process_data(
 def test_process_data(spark: SparkSession):
     ...
     spark_processing = process_data(
-        session=spark,
+        spark=spark,
         input_table_name='example_input',
         output_table='output',
         checkpoint_location=f'{TMP_DIR}/_checkpoint/output',
