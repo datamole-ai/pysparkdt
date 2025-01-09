@@ -4,9 +4,8 @@ from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
+from example.myjobpackage.processing import process_data
 from pysparkdt import reinit_local_metastore, spark_base
-
-from .processing import process_data
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
 JSON_TABLES_DIR = f'{DATA_DIR}/tables'
