@@ -106,7 +106,7 @@ output_table = dbutils.widgets.get('output_table')
 # COMMAND ----------
 
 process_data(
-    session=spark,
+    spark=spark,
     input_table=input_table,
     output_table=output_table,
 )
@@ -245,7 +245,7 @@ def test_process_data(
     reinit_local_metastore(spark, JSON_TABLES_DIR)
     
     process_data(
-        session=spark,
+        spark=spark,
         input_table='example_input',
         output_table='output',
     )

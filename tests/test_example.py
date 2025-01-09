@@ -23,7 +23,7 @@ def test_process_data(
 ):
     reinit_local_metastore(spark, JSON_TABLES_DIR)
     process_data(
-        session=spark,
+        spark=spark,
         input_table='example_input',
         output_table='output',
     )

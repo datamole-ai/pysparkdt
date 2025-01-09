@@ -17,7 +17,7 @@ output_table = dbutils.widgets.get('output_table')  # noqa: F821
 # COMMAND ----------
 
 process_data(
-    session=spark,  # noqa: F821
+    spark=spark,  # noqa: F821
     input_table=input_table,
     output_table=output_table,
 )
