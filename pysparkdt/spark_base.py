@@ -7,9 +7,9 @@ from pyspark.sql import SparkSession
 
 def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     """Creates and yields a Spark session configured for local run with
-    dynamically created local metastore acting as the Databricks data catalog.
+    dynamically created local metastore acting as the Dababricks data catalog.
 
-    It ensures proper teardown by stopping  the session and resetting the
+    It ensures proper teardown by stopping the session and resetting the
     SparkContext gateway and JVM by being generator.
 
     Only 1 session can be active at the time (previous session will be
@@ -42,11 +42,10 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     """
     existing = SparkSession.getActiveSession()
     if existing:
-        # Stop the Spark session and reset the gateway and JVM (otherwise
-        # metastore location could be incorrectly re-used)
-        existing.stop()
-        SparkContext._gateway = None
-        SparkContext._jvm = None
+        # Spark state can persist across test modules even when using
+        # module-scoped fixtures. Manually tear down any existing session
+        # to avoid metastore reuse issues.
+        _teardown_spark_session(existing)
 
     #  Create a spark session with Delta
     builder = (
@@ -73,7 +72,14 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     session.sparkContext.setLogLevel('ERROR')
     yield session
 
-    # Teardown: Stop the Spark session and reset the gateway and JVM
+    # Teardown: this runs after the module's tests complete. However,
+    # Spark sessions can leak between modules, so we also do a cleanup
+    # before session creation to ensure isolation.
+    _teardown_spark_session(session)
+
+
+def _teardown_spark_session(session: SparkSession) -> None:
+    """Stop the Spark session and reset the gateway and JVM"""
     session.stop()
     SparkContext._gateway = None
     SparkContext._jvm = None
