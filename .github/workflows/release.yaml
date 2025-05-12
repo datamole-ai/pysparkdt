@@ -1,0 +1,90 @@
+name: Release
+
+on: workflow_dispatch
+
+env:
+  CHANGELOG_FILE: CHANGELOG.md
+  FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
+  README_FILE: README.md
+  CONVCO_VERSION: v0.6.1
+  POETRY_VERSION: 1.8.2
+  PACKAGE_NAME: "pysparkdt"
+  PACKAGE_PATH: "pysparkdt"
+
+jobs:
+
+  release:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+      - name: Install convco
+        run: |
+          curl -sSfL "https://github.com/convco/convco/releases/download/${{ env.CONVCO_VERSION }}/convco-ubuntu.zip" | zcat > /usr/local/bin/convco
+          chmod +x /usr/local/bin/convco
+      - name: Set variables
+        run: |
+          base_version_command="
+            convco
+            version
+            --prefix=${{ env.PACKAGE_NAME }}/
+            --paths=${{ env.PACKAGE_PATH }}
+            --paths=pyproject.toml
+            --paths=poetry.lock
+            --paths=${{ env.README_FILE }}
+          "
+          old_version=$($base_version_command)
+          if [ $old_version = "0.0.0" ]; then # i.e. there is no version yet
+            new_version="1.0.0"
+          else
+            new_version=$($base_version_command --bump)
+          fi
+          new_tag=${{ env.PACKAGE_NAME }}/"$new_version"
+          echo "OLD_VERSION=$old_version" >> $GITHUB_ENV
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+          echo "old version: $old_version"
+          echo "new version: $new_version"
+          echo "new tag: $new_tag"
+      - name: Release and build
+        if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ########################################
+          # Generate changelogs
+          ########################################
+          base_changelog_command="
+            convco
+            changelog
+            --prefix=${{ env.PACKAGE_NAME }}/
+            --paths=${{ env.PACKAGE_PATH }}
+            --paths=pyproject.toml
+            --paths=poetry.lock
+            --paths=${{ env.README_FILE }}
+            --unreleased=${{ env.NEW_TAG }}
+          "
+          $base_changelog_command --max-versions=1 > ${{ env.CHANGELOG_FILE }}
+          $base_changelog_command > ${{ env.FULL_CHANGELOG_FILE }}
+          ########################################
+          # Create GitHub Release
+          ########################################
+          gh release create \
+            ${{ env.NEW_TAG }} \
+            --title ${{ env.NEW_TAG }} \
+            --notes-file ${{ env.CHANGELOG_FILE }} \
+            ${{ env.FULL_CHANGELOG_FILE }}
+          ########################################
+          # Publish to JFrog
+          ########################################
+          poetry version ${{ env.NEW_VERSION }}
+          poetry build
+      - name: Publish
+        if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
+        uses: pypa/gh-action-pypi-publish@release/v1
