@@ -267,6 +267,15 @@ def test_process_data(
 
 **ℹ️ For complete example, please look at [example](https://github.com/datamole-ai/pysparkdt/blob/main/example).**
 
+
+**⚠️ Manual deletion of local metastore**
+
+Deleting the local metastore manually invalidates any Spark session configured 
+for that location. You would need to start a new Spark session because 
+the original session’s state is no longer valid. Avoid manual deletion — 
+use `reinit_local_metastore` for reinitialization instead.
+
+
 **⚠️ Note on running tests in parallel**
 
 With the setup above, the metastore is shared on the module scope. 
