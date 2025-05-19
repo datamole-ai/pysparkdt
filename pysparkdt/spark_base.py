@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 
 def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     """Creates and yields a Spark session configured for local run with
-    dynamically created local metastore acting as the Dababricks data catalog.
+    dynamically created local metastore acting as the Databricks data catalog.
 
     It ensures proper teardown by stopping  the session and resetting the
     SparkContext gateway and JVM by being generator.
