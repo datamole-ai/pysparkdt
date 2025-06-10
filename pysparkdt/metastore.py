@@ -95,8 +95,10 @@ def reinit_local_metastore(
 
         if deletion_vectors:
             write_query = write_query.option(
-                'delta.enableDeletionVectors', 'true')
+                'delta.enableDeletionVectors', 'true'
+            )
         else:
             write_query = write_query.option(
-                'delta.enableDeletionVectors', 'false')
+                'delta.enableDeletionVectors', 'false'
+            )
         write_query.saveAsTable(table_name)
