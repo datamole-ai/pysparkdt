@@ -53,7 +53,7 @@ def reinit_local_metastore(
     json_tables_dir
         Directory where the delta tables and their schemas are located.
     deletion_vectors
-        Whether to disable deletion vectors for the delta tables.
+        Whether to enable deletion vectors for the delta tables.
         Defaults to True.
     """
     # Clear all existing tables (must be done through SQL, not by clearing the
