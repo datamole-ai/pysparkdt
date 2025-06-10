@@ -1,3 +1,4 @@
+import shutil
 from typing import Iterator
 
 from delta import configure_spark_with_delta_pip
@@ -45,7 +46,7 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
         # Spark state can persist across test modules even when using
         # module-scoped fixtures. Manually tear down any existing session
         # to avoid metastore reuse issues.
-        _teardown_spark_session(existing)
+        _teardown_spark_session(existing, metastore_dir)
 
     #  Create a spark session with Delta
     builder = (
@@ -75,11 +76,14 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     # Teardown: this runs after the module's tests complete. However,
     # Spark sessions can leak between modules, so we also do a cleanup
     # before session creation to ensure isolation.
-    _teardown_spark_session(session)
+    _teardown_spark_session(session, metastore_dir)
 
 
-def _teardown_spark_session(session: SparkSession) -> None:
+def _teardown_spark_session(
+    session: SparkSession, metastore_dir: str = None
+) -> None:
     """Stop the Spark session and reset the gateway and JVM"""
     session.stop()
     SparkContext._gateway = None
     SparkContext._jvm = None
+    shutil.rmtree(metastore_dir)
