@@ -8,7 +8,7 @@ from pyspark.sql.types import StructType
 def reinit_local_metastore(
     spark: SparkSession,
     json_tables_dir: str,
-    deletion_vectors: bool = False,
+    deletion_vectors: bool = True,
 ) -> None:
     """Re-initializes dynamic metastore acting as Databricks data catalog
     using provided input delta table data in json format.
@@ -53,8 +53,8 @@ def reinit_local_metastore(
     json_tables_dir
         Directory where the delta tables and their schemas are located.
     deletion_vectors
-        Whether to enable deletion vectors for the delta tables.
-        Defaults to False.
+        Whether to disable deletion vectors for the delta tables.
+        Defaults to True.
     """
     # Clear all existing tables (must be done through SQL, not by clearing the
     # folder)
@@ -92,7 +92,11 @@ def reinit_local_metastore(
         df = query.load(data_path)
 
         write_query = df.write.format('delta')
+
         if deletion_vectors:
             write_query = write_query.option(
                 'delta.enableDeletionVectors', 'true')
+        else:
+            write_query = write_query.option(
+                'delta.enableDeletionVectors', 'false')
         write_query.saveAsTable(table_name)
