@@ -39,8 +39,6 @@ Delta tables for both batch and streaming workloads.
   2. [Testable Code](#2-testable-code)
   3. [File Structure](#3-file-structure)
   4. [Tests](#4-tests)
-- [Features](#features)
-  - [Deletion Vectors](#deletion-vectors)
 - [Advanced](#advanced)
   - [Testing Stream Processing](#testing-stream-processing)
   - [Mocking Inside RDD and UDF Operations](#mocking-inside-rdd-and-udf-operations)
@@ -228,9 +226,7 @@ def spark():
 
 At the beginning of your test method call `reinit_local_metastore` function 
 from the testing package to initialize the metastore with the tables from 
-your json folder (`JSON_TABLES_DIR`). If the method is called while the 
-metastore  already exists, it will delete all the existing tables before 
-initializing the new ones.
+your json folder (`JSON_TABLES_DIR`). You can also choose to enable or disable deletion vectors for Delta tables (default: enabled). If the method is called while the metastore already exists, it will delete all the existing tables before initializing the new ones.
 
 *Alternatively, you can call this method only once per testing module, 
 but then individual testing methods might affect each other by modifying 
@@ -244,7 +240,7 @@ from pyspark.testing import assertDataFrameEqual
 def test_process_data(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, JSON_TABLES_DIR)
+    reinit_local_metastore(spark, JSON_TABLES_DIR, deletion_vectors=True)
     
     process_data(
         spark=spark,
@@ -285,24 +281,6 @@ Therefore, if tests defined in the same module are run in parallel,
 race conditions can occur if multiple test functions use the same tables.
 
 To mitigate this, make sure each test in the module uses its own set of tables.
-
-## Features
-
-### Deletion Vectors
-
-
-If you want to use Polars in your application instead of Spark, you may encounter compatibility issues because Polars 
-currently does not support deletion vectors ([see issue](https://github.com/delta-io/delta-rs/issues/1094)). To address this, you can test the application 
-behavior with pysparkdt in a local session by turning off deletion vectors. 
-
-To create metastore without deletion vectors:
-
-```python 
-reinit_local_metastore(spark, JSON_TABLES_DIR, deletion_vectors=False)
-```
-
-
-
 
 ## Advanced
 
