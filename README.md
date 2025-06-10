@@ -226,7 +226,10 @@ def spark():
 
 At the beginning of your test method call `reinit_local_metastore` function 
 from the testing package to initialize the metastore with the tables from 
-your json folder (`JSON_TABLES_DIR`). You can also choose to enable or disable deletion vectors for Delta tables (default: enabled). If the method is called while the metastore already exists, it will delete all the existing tables before initializing the new ones.
+your json folder (`JSON_TABLES_DIR`). You can also choose to enable or disable
+ deletion vectors for Delta tables (default: enabled). If the method is called
+  while the metastore already exists, it will delete all the existing tables
+   before initializing the new ones.
 
 *Alternatively, you can call this method only once per testing module, 
 but then individual testing methods might affect each other by modifying 
