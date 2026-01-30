@@ -14,8 +14,9 @@ priority = "primary"
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.13"
-pyspark = { version = "^3.5.0", extras = ["sql"] }
+pyspark = { version = ">=3.5.0, <3.5.6", extras = ["sql"] }
 delta-spark = "^3.0.0"
+pandas = "<3.0.0"
 numpy = [
     { version = ">=1.26.0", python = ">=3.9" },
     { version = "<1.26.0", python = ">=3.8, <3.9" }
@@ -23,8 +24,8 @@ numpy = [
 setuptools = { version = "^75.6.0", python = ">=3.12,<3.13" }  # Necessary for Python 3.12 as distutils is missing without it
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.8.3"
-pytest = "^8.3.4"
+ruff = "^0.14"
+pytest = "^8.3.5"
 pytest-mock = "^3.14.0"
 
 [tool.ruff]
@@ -44,6 +45,10 @@ quote-style = "single"
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
 "*/**" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["example"]
 
 [build-system]
 requires = ["poetry-core"]
