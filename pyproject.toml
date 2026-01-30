@@ -13,11 +13,12 @@ name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
-python = ">=3.10, <3.13"
-pyspark = { version = ">=3.5.0, <3.5.6 || >=4.0.0, <4.1.0", extras = ["sql"] }
+python = ">=3.10, <3.15"
+pyspark = { version = ">=3.5.0, <3.5.6 || >=4.0.0, <4.1.0", extras = ["sql"] }  # 3.5.6 - 3.5.8 https://github.com/delta-io/delta/issues/4671 not solved for 3.5.6 - 3.5.8
 delta-spark = ">=3.0.0, <4.1.0"
 numpy = ">=1.26.0"
-setuptools = { version = "^75.6.0", python = ">=3.12,<3.13" }  # Necessary for Python 3.12 as distutils is missing without it
+pandas = "<3.0.0"  # PySpark 4.0.x not compatible with Pandas 3.0.x (30.1.2026) + Python 3.10 not compatible with Pandas 3
+setuptools = { version = "^75.6.0", python = ">=3.12" }  # Necessary for Python 3.12+ as distutils is missing without it
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.14"
