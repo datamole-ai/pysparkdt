@@ -14,10 +14,11 @@ env:
 jobs:
 
   tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        pyspark-version: ["3.5.5", "4.0.1"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,12 +39,15 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
+      - name: Pin PySpark version
+        run: poetry add --lock 'pyspark[sql]==${{ matrix.pyspark-version }}'
+
       - name: Set up cache
         uses: actions/cache@v4
         id: venv-cache
         with:
           path: .venv/
-          key: poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-${{ matrix.python-version }}-pyspark-${{ matrix.pyspark-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         if: steps.venv-cache.outputs.cache-hit != 'true'
