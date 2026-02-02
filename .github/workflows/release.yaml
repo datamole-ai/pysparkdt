@@ -53,10 +53,8 @@ jobs:
           echo "old version: $old_version"
           echo "new version: $new_version"
           echo "new tag: $new_tag"
-      - name: Release and build
+      - name: Generate changelogs and build
         if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           ########################################
           # Generate changelogs
@@ -74,18 +72,20 @@ jobs:
           $base_changelog_command --max-versions=1 > ${{ env.CHANGELOG_FILE }}
           $base_changelog_command > ${{ env.FULL_CHANGELOG_FILE }}
           ########################################
-          # Create GitHub Release
-          ########################################
-          gh release create \
-            ${{ env.NEW_TAG }} \
-            --title ${{ env.NEW_TAG }} \
-            --notes-file ${{ env.CHANGELOG_FILE }} \
-            ${{ env.FULL_CHANGELOG_FILE }}
-          ########################################
-          # Publish to JFrog
+          # Build Package
           ########################################
           poetry version ${{ env.NEW_VERSION }}
           poetry build
       - name: Publish
         if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create GitHub Release
+        if: ${{ env.OLD_VERSION != env.NEW_VERSION }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create \
+            ${{ env.NEW_TAG }} \
+            --title ${{ env.NEW_TAG }} \
+            --notes-file ${{ env.CHANGELOG_FILE }} \
+            ${{ env.FULL_CHANGELOG_FILE }}
