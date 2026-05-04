@@ -4,11 +4,14 @@ from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
-from example.myjobpackage.processing import process_data
 from pysparkdt import reinit_local_metastore, spark_base
+from tests.data.factories import (
+    ALL_TABLES,
+    EXAMPLE_INPUT_TABLE,
+    EXPECTED_OUTPUT_TABLE,
+)
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
-JSON_TABLES_DIR = f'{DATA_DIR}/tables'
 TMP_DIR = f'{DATA_DIR}/tmp'
 METASTORE_DIR = f'{TMP_DIR}/metastore'
 
@@ -18,18 +21,22 @@ def spark():
     yield from spark_base(METASTORE_DIR)
 
 
-def test_process_data(
+def test_reinit_local_metastore_writes_all_factories(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, JSON_TABLES_DIR)
-    process_data(
-        spark=spark,
-        input_table='example_input',
-        output_table='output',
-    )
-    output = spark.read.format('delta').table('output')
-    expected = spark.read.format('delta').table('expected_output')
+    reinit_local_metastore(spark, ALL_TABLES)
+
+    actual_input = spark.read.format('delta').table(EXAMPLE_INPUT_TABLE)
+    expected_output = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
+
+    expected_input_df = ALL_TABLES[EXAMPLE_INPUT_TABLE](spark)
+    expected_output_df = ALL_TABLES[EXPECTED_OUTPUT_TABLE](spark)
+
     assertDataFrameEqual(
-        actual=output.select(sorted(output.columns)),
-        expected=expected.select(sorted(expected.columns)),
+        actual=actual_input.select(sorted(actual_input.columns)),
+        expected=expected_input_df.select(sorted(expected_input_df.columns)),
+    )
+    assertDataFrameEqual(
+        actual=expected_output.select(sorted(expected_output.columns)),
+        expected=expected_output_df.select(sorted(expected_output_df.columns)),
     )

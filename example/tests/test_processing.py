@@ -1,14 +1,16 @@
 import os
 
 from myjobpackage.processing import process_data
+from myjobpackage.tables import EXAMPLE_INPUT_TABLE
 from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
+from tests.data.factories import ALL_TABLES
+from tests.data.tables import EXPECTED_OUTPUT_TABLE
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
-JSON_TABLES_DIR = f'{DATA_DIR}/tables'
 TMP_DIR = f'{DATA_DIR}/tmp'
 METASTORE_DIR = f'{TMP_DIR}/metastore'
 
@@ -21,14 +23,14 @@ def spark():
 def test_process_data(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, JSON_TABLES_DIR)
+    reinit_local_metastore(spark, ALL_TABLES)
     process_data(
         spark=spark,
-        input_table='example_input',
+        input_table=EXAMPLE_INPUT_TABLE,
         output_table='output',
     )
     output = spark.read.format('delta').table('output')
-    expected = spark.read.format('delta').table('expected_output')
+    expected = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
     assertDataFrameEqual(
         actual=output.select(sorted(output.columns)),
         expected=expected.select(sorted(expected.columns)),

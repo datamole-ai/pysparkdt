@@ -42,8 +42,6 @@ Delta tables for both batch and streaming workloads.
 - [Advanced](#advanced)
   - [Testing Stream Processing](#testing-stream-processing)
   - [Mocking Inside RDD and UDF Operations](#mocking-inside-rdd-and-udf-operations)
-- [Limitations](#limitations)
-  - [Map Key Type Must Be String](#map-key-type-must-be-string)
 
 ## Overview
 
@@ -121,82 +119,18 @@ process_data(
 myjobpackage
 ├── __init__.py
 ├── entrypoint.py  # Databricks Notebook
-└── processing.py
+├── processing.py
+└── tables.py      # optional: names/schemas for tables the job uses
 tests
 ├── __init__.py
 ├── test_processing.py
 └── data
-    └── tables
-        ├── example_input.ndjson
-        ├── expected_output.ndjson
-        └── schema
-            ├── example_input.json
-            └── expected_output.json
+    └── factories.py  # ALL_TABLES, table names, schemas, factories
 ```
 
-**Data Format**
-
-- **Test Data:** Newline-delimited JSON (`.ndjson`)
-- **Optional Schema:** JSON
-  - If present, full schema must be provided (all columns included).
-  - The format of the schema file is defined by [PySpark StructType JSON 
-  representation](https://spark.apache.org/docs/latest/api/python/_modules/pyspark/sql/types.html#StructType.fromJson).
-
-<div align="center">
-<strong>example_input.ndjson</strong>
-</div>
-
-```json lines
-{"id": 0, "time_utc": "2024-01-08T11:00:00", "name": "Jorge", "feature": 0.5876}
-{"id": 1, "time_utc": "2024-01-11T14:28:00", "name": "Ricardo", "feature": 0.42}
-```
-
-<div align="center">
-<strong>example_input.json</strong>
-</div>
-
-```json
-{
-    "type": "struct",
-    "fields": 
-    [
-        {
-            "name": "id",
-            "type": "long",
-            "nullable": false,
-            "metadata": {}
-        },
-        {
-            "name": "time_utc",
-            "type": "timestamp",
-            "nullable": false,
-            "metadata": {}
-        },
-        {
-            "name": "name",
-            "type": "string",
-            "nullable": true,
-            "metadata": {}
-        },
-        {
-            "name": "feature",
-            "type": "double",
-            "nullable": true,
-            "metadata": {}
-        }
-    ]
-}
-```
-
-**Tip:** A schema file for a loaded PySpark DataFrame df can be created using:
-
-```python
-with(open('example_input.json', 'w')) as file:
-  file.write(json.dumps(df.schema.jsonValue(), indent=4))
-```
-
-Thus, you can first load a table without a schema, then create schema file 
-from it and modify the types to the desired one.
+Put table fixtures under `tests/data/` (typically `factories.py` with a dict
+such as `ALL_TABLES`). Import production schemas from your job package where
+appropriate.
 
 ### 4. Tests
 
@@ -204,7 +138,6 @@ from it and modify the types to the desired one.
 
 ```python
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
-JSON_TABLES_DIR = f'{DATA_DIR}/tables'
 TMP_DIR = f'{DATA_DIR}/tmp'
 METASTORE_DIR = f'{TMP_DIR}/metastore'
 ```
@@ -222,38 +155,43 @@ def spark():
     yield from spark_base(METASTORE_DIR)
 ```
 
-**Metastore Initialization:** Use `reinit_local_metastore`
+**Table setup:** Use `reinit_local_metastore`
 
-At the beginning of your test method call `reinit_local_metastore` function 
-from the testing package to initialize the metastore with the tables from 
-your json folder (`JSON_TABLES_DIR`). You can also choose to enable or disable
- deletion vectors for Delta tables (default: enabled). If the method is called
-  while the metastore already exists, it will delete all the existing tables
-   before initializing the new ones.
+Call `reinit_local_metastore(spark, ALL_TABLES)` with a dict mapping each table name to
+a callable `(spark) -> DataFrame` (see `tests.data.factories`). It drops **all
+tables** in Spark's current database (usually `default`). It does not drop
+tables in other databases. It then writes each factory output as Delta
+(unqualified names in that database). The
+``deletion_vectors`` argument defaults to on; pass ``deletion_vectors=False``
+to disable Delta deletion vectors.
 
-*Alternatively, you can call this method only once per testing module, 
-but then individual testing methods might affect each other by modifying 
-metastore tables.*
+*Alternatively, you can call this only once per testing module, but then
+individual tests might affect each other by modifying tables.*
 
 ```python
 from myjobpackage.processing import process_data
-from pysparkdt import reinit_local_metastore
+from myjobpackage.tables import EXAMPLE_INPUT_TABLE
+from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
+from pysparkdt import reinit_local_metastore
+
+from tests.data.factories import ALL_TABLES, EXPECTED_OUTPUT_TABLE
+
 
 def test_process_data(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, JSON_TABLES_DIR, deletion_vectors=True)
-    
+    reinit_local_metastore(spark, ALL_TABLES)
+
     process_data(
         spark=spark,
-        input_table='example_input',
+        input_table=EXAMPLE_INPUT_TABLE,
         output_table='output',
     )
-    
+
     output = spark.read.format('delta').table('output')
-    expected = spark.read.format('delta').table('expected_output')
-    
+    expected = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
+
     assertDataFrameEqual(
         actual=output.select(sorted(output.columns)),
         expected=expected.select(sorted(expected.columns)),
@@ -442,23 +380,6 @@ def test_process_data(
 ):
   ...
 ```
-
-## Limitations
-
-### Map Key Type Must Be String
-
-Although Spark supports non-string key types in map fields, the JSON format 
-itself does not support non-string keys. In JSON, all keys are inherently 
-interpreted as strings, regardless of their declared type in the schema. 
-This discrepancy becomes problematic when testing with `.ndjson` files.
-
-Specifically, if the schema defines a map key type as anything other than 
-`string` (such as `long` or `integer`), the reinitialization of the metastore 
-will  result in `None` values for all fields in the Delta table when the data 
-is loaded. This happens because the keys in the JSON data are read as strings, 
-but the schema expects another type, leading to a silent failure where no 
-exception or warning is raised. This makes the issue difficult to detect 
-and debug.
 
 ## License
 
