@@ -35,14 +35,7 @@ def reinit_local_metastore(
     """Re-initialize the local metastore from table factories.
 
     Drops every table in Spark's current database, then writes each entry
-    as Delta in that database (unqualified table names, same as the historic
-    NDJSON-based ``reinit_local_metastore``). Other databases are not scanned
-    for drops.
-
-    Every table gets ``delta.enableDeletionVectors`` from ``deletion_vectors``
-    via ``ALTER TABLE ... SET TBLPROPERTIES`` after the write.
-
-    Iteration follows dict insertion order.
+    as Delta in that database .
 
     Parameters
     ----------
@@ -52,8 +45,8 @@ def reinit_local_metastore(
         Mapping from table name to a ``TableFactory`` (function that takes a
         ``SparkSession`` and returns a ``DataFrame``).
     deletion_vectors
-        Whether to set ``delta.enableDeletionVectors`` on every table
-        (``'true'`` / ``'false'``). Defaults to ``True``.
+        Whether to enable deletion vectors for the delta tables.
+        Defaults to True.
     """
     _drop_all_tables(spark)
     dv = {
