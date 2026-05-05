@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from myjobpackage.tables import (
+from pyspark.sql import SparkSession
+
+from example.myjobpackage.tables import (
     EXAMPLE_INPUT_SCHEMA,
     EXAMPLE_INPUT_TABLE,
     EXAMPLE_OUTPUT_SCHEMA,
 )
-from pyspark.sql import SparkSession
 
 EXPECTED_OUTPUT_TABLE = 'expected_output'
 
