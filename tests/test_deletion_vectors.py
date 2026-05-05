@@ -4,7 +4,8 @@ from pyspark.sql import SparkSession
 from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
-from tests.data.factories import ALL_TABLES, EXAMPLE_INPUT_TABLE
+from example.myjobpackage.tables import EXAMPLE_INPUT_TABLE
+from tests.data.factories import ALL_TABLES
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
 TMP_DIR = f'{DATA_DIR}/tmp'

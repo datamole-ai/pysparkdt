@@ -5,9 +5,10 @@ from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
+from example.myjobpackage.processing import process_data
+from example.myjobpackage.tables import EXAMPLE_INPUT_TABLE, EXAMPLE_OUTPUT_TABLE
 from tests.data.factories import (
     ALL_TABLES,
-    EXAMPLE_INPUT_TABLE,
     EXPECTED_OUTPUT_TABLE,
 )
 
@@ -25,18 +26,16 @@ def test_reinit_local_metastore_writes_all_factories(
     spark: SparkSession,
 ):
     reinit_local_metastore(spark, ALL_TABLES)
+    process_data(
+        spark=spark,
+        input_table=EXAMPLE_INPUT_TABLE,
+        output_table=EXAMPLE_OUTPUT_TABLE,
+    )
 
-    actual_input = spark.read.format('delta').table(EXAMPLE_INPUT_TABLE)
+    actual_output = spark.read.format('delta').table(EXAMPLE_OUTPUT_TABLE)
     expected_output = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
 
-    expected_input_df = ALL_TABLES[EXAMPLE_INPUT_TABLE](spark)
-    expected_output_df = ALL_TABLES[EXPECTED_OUTPUT_TABLE](spark)
-
     assertDataFrameEqual(
-        actual=actual_input.select(sorted(actual_input.columns)),
-        expected=expected_input_df.select(sorted(expected_input_df.columns)),
-    )
-    assertDataFrameEqual(
-        actual=expected_output.select(sorted(expected_output.columns)),
-        expected=expected_output_df.select(sorted(expected_output_df.columns)),
+        actual=actual_output.select(sorted(actual_output.columns)),
+        expected=expected_output.select(sorted(expected_output.columns)),
     )
