@@ -1,9 +1,13 @@
 from datetime import datetime
 
-from myjobpackage.tables import EXAMPLE_INPUT_SCHEMA, EXAMPLE_INPUT_TABLE
+from myjobpackage.tables import (
+    EXAMPLE_INPUT_SCHEMA,
+    EXAMPLE_INPUT_TABLE,
+    EXAMPLE_OUTPUT_SCHEMA,
+)
 from pyspark.sql import SparkSession
 
-from tests.data.tables import EXPECTED_OUTPUT_SCHEMA, EXPECTED_OUTPUT_TABLE
+from tests.data.tables import EXPECTED_OUTPUT_TABLE
 
 
 def example_input(spark: SparkSession):
@@ -19,7 +23,7 @@ def expected_output(spark: SparkSession):
         (0, datetime(2024, 1, 8, 11, 0, 0), 'Jorge', 58.76),
         (1, datetime(2024, 1, 11, 14, 28, 0), 'Ricardo', 42.0),
     ]
-    return spark.createDataFrame(data, EXPECTED_OUTPUT_SCHEMA)
+    return spark.createDataFrame(data, EXAMPLE_OUTPUT_SCHEMA)
 
 
 ALL_TABLES = {
