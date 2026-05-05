@@ -35,10 +35,10 @@ def test_reinit_local_metastore_writes_all_factories(
         output_table=EXAMPLE_OUTPUT_TABLE,
     )
 
-    actual_output = spark.read.format('delta').table(EXAMPLE_OUTPUT_TABLE)
-    expected_output = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
+    output = spark.read.format('delta').table(EXAMPLE_OUTPUT_TABLE)
+    expected = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
 
     assertDataFrameEqual(
-        actual=actual_output.select(sorted(actual_output.columns)),
-        expected=expected_output.select(sorted(expected_output.columns)),
+        actual=output.select(sorted(output.columns)),
+        expected=expected.select(sorted(expected.columns)),
     )
