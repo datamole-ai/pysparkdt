@@ -162,7 +162,7 @@ a callable `(spark) -> DataFrame` (see `tests.data.factories`). It drops **all
 tables** in Spark's current database (usually `default`). It does not drop
 tables in other databases. It then writes each factory output as Delta
 (unqualified names in that database). The
-``deletion_vectors`` argument defaults to on; pass ``deletion_vectors=False``
+`deletion_vectors` argument defaults to on; pass `deletion_vectors=False`
 to disable Delta deletion vectors.
 
 *Alternatively, you can call this only once per testing module, but then
@@ -171,9 +171,8 @@ individual tests might affect each other by modifying tables.*
 ```python
 from myjobpackage.processing import process_data
 from myjobpackage.tables import EXAMPLE_INPUT_TABLE
-from pyspark.sql import SparkSession
-from pyspark.testing import assertDataFrameEqual
 from pysparkdt import reinit_local_metastore
+from pyspark.testing import assertDataFrameEqual
 
 from tests.data.factories import ALL_TABLES, EXPECTED_OUTPUT_TABLE
 
