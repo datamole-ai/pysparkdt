@@ -1,8 +1,12 @@
 from datetime import datetime
 
-from example.myjobpackage.tables import EXAMPLE_INPUT_SCHEMA, EXAMPLE_INPUT_TABLE
 from pyspark.sql import SparkSession
 from pyspark.sql.types import DoubleType, StructField, StructType
+
+from example.myjobpackage.tables import (
+    EXAMPLE_INPUT_SCHEMA,
+    EXAMPLE_INPUT_TABLE,
+)
 
 EXPECTED_OUTPUT_TABLE = 'expected_output'
 
