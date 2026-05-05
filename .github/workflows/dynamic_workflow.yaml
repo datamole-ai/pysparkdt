@@ -7,7 +7,7 @@ env:
   FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
   README_FILE: README.md
   CONVCO_VERSION: v0.6.1
-  POETRY_VERSION: 1.8.2
+  UV_VERSION: 0.11.8
   PACKAGE_NAME: "pysparkdt"
   PACKAGE_PATH: "pysparkdt"
 
@@ -29,34 +29,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Bootstrap poetry
-        run: |
-          curl -sL https://install.python-poetry.org | python - -y
-
-      - name: Update PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Configure poetry
-        run: poetry config virtualenvs.in-project true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
 
       - name: Pin PySpark version
-        run: poetry add --lock 'pyspark[sql]==${{ matrix.pyspark-version }}'
-
-      - name: Set up cache
-        uses: actions/cache@v4
-        id: venv-cache
-        with:
-          path: .venv/
-          key: poetry-${{ matrix.python-version }}-pyspark-${{ matrix.pyspark-version }}-${{ hashFiles('poetry.lock') }}
+        run: |
+          sed -i 's|"pyspark\\[sql\\][^"]*"|"pyspark[sql]==${{ matrix.pyspark-version }}"|' pyproject.toml
+          uv lock
 
       - name: Install dependencies
-        if: steps.venv-cache.outputs.cache-hit != 'true'
-        run: |
-          poetry env use ${{ matrix.python-version }}
-          poetry install
+        run: uv sync --locked
 
       - name: Run checks
         run: |
-          poetry run ruff check .
-          poetry run ruff format --check .
-          poetry run pytest tests
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest tests

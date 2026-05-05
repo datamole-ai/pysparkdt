@@ -1,29 +1,41 @@
-[tool.poetry]
+[project]
 name = "pysparkdt"
-version = "0" # DO NOT CHANGE - managed by Git tags and CI
-license = "MIT"
-repository = "https://github.com/datamole-ai/pysparkdt"
+version = "0.0.0"  # Do not modify this, it is managed by CI
 description = "An open-source Python library for simplifying local testing of Databricks workflows that use PySpark and Delta tables."
-authors = ["Juraj Pall <juraj.pall@datamole.ai>"]
-exclude = ["tests"]
 readme = "README.md"
+requires-python = ">=3.10, <3.15"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Juraj Pall", email = "juraj.pall@datamole.ai" }]
+dependencies = [
+    "pyspark[sql]>=3.5.0,!=3.5.6,!=3.5.7,!=3.5.8,!=3.5.9,!=3.5.10,!=3.5.11,<4.1.0",  # 3.5.6+ https://github.com/delta-io/delta/issues/4671 not solved for at least 3.5.6 - 3.5.8, we must use != to exclude versions as there is no conditional operator supported in pypi
+    "delta-spark>=3.0.0,<4.1.0",
+    "numpy>=1.26.0",
+    "pandas<3.0.0",  # PySpark 4.0.x not compatible with Pandas 3.0.x (30.1.2026) + Python 3.10 not compatible with Pandas 3
+    "setuptools>=75.6.0,<76; python_version >= '3.12'",  # Necessary for Python 3.12+ as distutils is missing without it
+]
 
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "primary"
+[project.urls]
+Homepage = "https://github.com/datamole-ai/pysparkdt"
+Repository = "https://github.com/datamole-ai/pysparkdt"
+Issues = "https://github.com/datamole-ai/pysparkdt/issues"
 
-[tool.poetry.dependencies]
-python = ">=3.10, <3.15"
-pyspark = { version = ">=3.5.0, !=3.5.6, !=3.5.7, !=3.5.8, !=3.5.9, !=3.5.10, !=3.5.11, <4.1.0", extras = ["sql"] }  # 3.5.6+ https://github.com/delta-io/delta/issues/4671 not solved for at least 3.5.6 - 3.5.8, we must use != to exclude versions as there is no conditional operator supported in pypi
-delta-spark = ">=3.0.0, <4.1.0"
-numpy = ">=1.26.0"
-pandas = "<3.0.0"  # PySpark 4.0.x not compatible with Pandas 3.0.x (30.1.2026) + Python 3.10 not compatible with Pandas 3
-setuptools = { version = "^75.6.0", python = ">=3.12" }  # Necessary for Python 3.12+ as distutils is missing without it
+[dependency-groups]
+dev = [
+    "ruff>=0.14.14,<0.15.0",
+    "pytest>=9.0.2,<10.0.0",
+    "pytest-mock>=3.15.1,<4.0.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.14.14"
-pytest = "^9.0.2"
-pytest-mock = "^3.15.1"
+[tool.hatch.build.targets.wheel]
+packages = ["pysparkdt"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "pysparkdt",
+    "README.md",
+    "LICENSE",
+]
 
 [tool.ruff]
 line-length = 79
@@ -48,5 +60,9 @@ testpaths = ["tests"]
 norecursedirs = ["example"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+required-version = ">=0.10.0"
+exclude-newer = "14 days"
