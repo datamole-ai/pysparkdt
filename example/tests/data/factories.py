@@ -7,7 +7,7 @@ from myjobpackage.tables import (
 )
 from pyspark.sql import SparkSession
 
-from tests.data.tables import EXPECTED_OUTPUT_TABLE
+EXPECTED_OUTPUT_TABLE = 'expected_output'
 
 
 def example_input(spark: SparkSession):
