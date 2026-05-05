@@ -49,7 +49,8 @@ def reinit_local_metastore(
     spark
         Local Spark session.
     tables
-        Mapping from table name to a ``TableFactory`` (``(spark) -> DataFrame``).
+        Mapping from table name to a ``TableFactory`` (function that takes a
+        ``SparkSession`` and returns a ``DataFrame``).
     deletion_vectors
         Whether to set ``delta.enableDeletionVectors`` on every table
         (``'true'`` / ``'false'``). Defaults to ``True``.
