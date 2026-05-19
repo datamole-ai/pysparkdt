@@ -11,9 +11,7 @@ from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
 
-DATA_DIR = f'{os.path.dirname(__file__)}/data'
-TMP_DIR = f'{DATA_DIR}/tmp'
-METASTORE_DIR = f'{TMP_DIR}/metastore'
+METASTORE_DIR = f'{os.path.dirname(__file__)}/data/tmp/metastore'
 
 TEST_TABLE = 'deletion_vectors_test'
 TEST_SCHEMA = StructType(
