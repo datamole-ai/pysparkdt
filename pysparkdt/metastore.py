@@ -16,7 +16,6 @@ def _write_table(
     (
         df.write
         .format('delta')
-        .mode('overwrite')
         .option('delta.enableDeletionVectors', str(deletion_vectors).lower())
         .saveAsTable(name)
     )
