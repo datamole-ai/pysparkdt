@@ -14,8 +14,7 @@ def _write_table(
 ) -> None:
     df = factory(spark)
     (
-        df.write
-        .format('delta')
+        df.write.format('delta')
         .option('delta.enableDeletionVectors', str(deletion_vectors).lower())
         .saveAsTable(name)
     )
