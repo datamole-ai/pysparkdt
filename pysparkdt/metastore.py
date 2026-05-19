@@ -10,14 +10,16 @@ def _write_table(
     name: str,
     factory: TableFactory,
     *,
-    tbl_properties: dict[str, str] | None = None,
+    deletion_vectors: bool = True,
 ) -> None:
-    """Write factory output as Delta; optional TBLPROPERTIES after write."""
     df = factory(spark)
-    df.write.format('delta').mode('overwrite').saveAsTable(name)
-    if tbl_properties:
-        props = ', '.join(f"'{k}'='{v}'" for k, v in tbl_properties.items())
-        spark.sql(f'ALTER TABLE {name} SET TBLPROPERTIES ({props})')
+    (
+        df.write
+        .format('delta')
+        .mode('overwrite')
+        .option('delta.enableDeletionVectors', str(deletion_vectors).lower())
+        .saveAsTable(name)
+    )
 
 
 def _drop_all_tables(spark: SparkSession) -> None:
@@ -49,10 +51,5 @@ def reinit_local_metastore(
         Defaults to True.
     """
     _drop_all_tables(spark)
-    dv = {
-        'delta.enableDeletionVectors': (
-            'true' if deletion_vectors else 'false'
-        )
-    }
     for name, factory in tables.items():
-        _write_table(spark, name, factory, tbl_properties=dv)
+        _write_table(spark, name, factory, deletion_vectors=deletion_vectors)
