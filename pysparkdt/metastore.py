@@ -37,7 +37,7 @@ def reinit_local_metastore(
     """Re-initialize the local metastore from table factories.
 
     Drops every table in Spark's current database, then writes each entry
-    as Delta in that database .
+    as Delta in that database.
 
     Parameters
     ----------
