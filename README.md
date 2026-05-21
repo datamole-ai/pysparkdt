@@ -42,6 +42,8 @@ Delta tables for both batch and streaming workloads.
 - [Advanced](#advanced)
   - [Testing Stream Processing](#testing-stream-processing)
   - [Mocking Inside RDD and UDF Operations](#mocking-inside-rdd-and-udf-operations)
+- [Limitations](#limitations)
+  - [Map Key Type Must Be String](#map-key-type-must-be-string)
 
 ## Overview
 
@@ -135,9 +137,84 @@ than redefining them in tests. If it doesn't — some projects intentionally
 keep schemas out of the source tree — define them alongside the factories.
 
 For fixtures too large to define inline, build factories from NDJSON files
-with `ndjson_table_factory(path)` (or `ndjson_dir_to_tables(dir)` to ingest
-a whole directory at once). The legacy `<dir>/schema/<table>.json`
-companion is honoured for explicit schemas.
+with `ndjson_table_factory(path)` or `ndjson_dir_to_tables(dir)`. NDJSON
+fixtures live alongside the factories:
+
+```
+tests/data/tables
+├── example_input.ndjson
+├── expected_output.ndjson
+└── schema
+    ├── example_input.json
+    └── expected_output.json
+```
+
+**Data Format**
+
+- **Test Data:** Newline-delimited JSON (`.ndjson`)
+- **Optional Schema:** JSON
+  - If present, full schema must be provided (all columns included).
+  - The format of the schema file is defined by [PySpark StructType JSON 
+  representation](https://spark.apache.org/docs/latest/api/python/_modules/pyspark/sql/types.html#StructType.fromJson).
+  - When loaded via `ndjson_table_factory` / `ndjson_dir_to_tables`, the
+  sibling `<dir>/schema/<table>.json` is honoured automatically; pass an
+  in-code `StructType` via `schema=` to override.
+
+<div align="center">
+<strong>example_input.ndjson</strong>
+</div>
+
+```json lines
+{"id": 0, "time_utc": "2024-01-08T11:00:00", "name": "Jorge", "feature": 0.5876}
+{"id": 1, "time_utc": "2024-01-11T14:28:00", "name": "Ricardo", "feature": 0.42}
+```
+
+<div align="center">
+<strong>example_input.json</strong>
+</div>
+
+```json
+{
+    "type": "struct",
+    "fields": 
+    [
+        {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+        },
+        {
+            "name": "time_utc",
+            "type": "timestamp",
+            "nullable": false,
+            "metadata": {}
+        },
+        {
+            "name": "name",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+        },
+        {
+            "name": "feature",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+        }
+    ]
+}
+```
+
+**Tip:** A schema file for a loaded PySpark DataFrame df can be created using:
+
+```python
+with(open('example_input.json', 'w')) as file:
+  file.write(json.dumps(df.schema.jsonValue(), indent=4))
+```
+
+Thus, you can first load a table without a schema, then create schema file 
+from it and modify the types to the desired one.
 
 ### 4. Tests
 
@@ -385,6 +462,23 @@ def test_process_data(
 ):
   ...
 ```
+
+## Limitations
+
+### Map Key Type Must Be String
+
+Although Spark supports non-string key types in map fields, the JSON format 
+itself does not support non-string keys. In JSON, all keys are inherently 
+interpreted as strings, regardless of their declared type in the schema. 
+This discrepancy becomes problematic when testing with `.ndjson` files.
+
+Specifically, if the schema defines a map key type as anything other than 
+`string` (such as `long` or `integer`), the reinitialization of the metastore 
+will  result in `None` values for all fields in the Delta table when the data 
+is loaded. This happens because the keys in the JSON data are read as strings, 
+but the schema expects another type, leading to a silent failure where no 
+exception or warning is raised. This makes the issue difficult to detect 
+and debug.
 
 ## License
 
