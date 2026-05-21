@@ -163,9 +163,7 @@ Call `reinit_local_metastore(spark, ALL_TABLES)` with a dict mapping each table 
 a callable `(spark) -> DataFrame` (see `tests.data.factories`). It drops **all
 tables** in Spark's current schema (usually `default`). It does not drop
 tables in other schemas. It then writes each factory output as Delta
-(unqualified names in that schema). The
-`deletion_vectors` argument defaults to on; pass `deletion_vectors=False`
-to disable Delta deletion vectors.
+(unqualified names in that schema).
 
 *Alternatively, you can call this only once per testing module, but then
 individual tests might affect each other by modifying tables.*
