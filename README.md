@@ -165,8 +165,9 @@ tables** in Spark's current schema (usually `default`). It does not drop
 tables in other schemas. It then writes each factory output as Delta
 (unqualified names in that schema).
 
-*Alternatively, you can call this only once per testing module, but then
-individual tests might affect each other by modifying tables.*
+*Alternatively, you can call this method only once per testing module,
+but then individual testing methods might affect each other by modifying
+metastore tables.*
 
 ```python
 from myjobpackage.processing import process_data
