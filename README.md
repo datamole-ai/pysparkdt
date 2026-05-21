@@ -129,8 +129,10 @@ tests
 ```
 
 Put table fixtures under `tests/data/` (typically `factories.py` with a dict
-such as `ALL_TABLES`). Import production schemas from your job package where
-appropriate.
+such as `ALL_TABLES`). If your job package already defines table
+names/schemas (e.g. in a `tables.py` module), reuse them from there rather
+than redefining them in tests. If it doesn't — some projects intentionally
+keep schemas out of the source tree — define them alongside the factories.
 
 ### 4. Tests
 
