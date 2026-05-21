@@ -1,0 +1,30 @@
+{
+    "type": "struct",
+    "fields":
+    [
+        {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+        },
+        {
+            "name": "time_utc",
+            "type": "timestamp",
+            "nullable": false,
+            "metadata": {}
+        },
+        {
+            "name": "name",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+        },
+        {
+            "name": "feature",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+        }
+    ]
+}

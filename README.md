@@ -134,6 +134,11 @@ names/schemas (e.g. in a `tables.py` module), reuse them from there rather
 than redefining them in tests. If it doesn't — some projects intentionally
 keep schemas out of the source tree — define them alongside the factories.
 
+For fixtures too large to define inline, build factories from NDJSON files
+with `ndjson_table_factory(path)` (or `ndjson_dir_to_tables(dir)` to ingest
+a whole directory at once). The legacy `<dir>/schema/<table>.json`
+companion is honoured for explicit schemas.
+
 ### 4. Tests
 
 **Constants:** Define paths for test data and the temporary metastore.
