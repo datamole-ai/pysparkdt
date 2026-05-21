@@ -1,4 +1,4 @@
-"""Schemas and table names for Delta tables this job uses in production."""
+"""Schemas and table names for Delta tables this job uses."""
 
 from pyspark.sql.types import (
     DoubleType,
