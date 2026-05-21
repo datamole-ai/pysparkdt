@@ -7,8 +7,7 @@ from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
 
 from pysparkdt import reinit_local_metastore, spark_base
-from tests.data.factories import ALL_TABLES
-from tests.data.tables import EXPECTED_OUTPUT_TABLE
+from tests.data.factories import ALL_TABLES, EXPECTED_OUTPUT_TABLE
 
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
 TMP_DIR = f'{DATA_DIR}/tmp'
