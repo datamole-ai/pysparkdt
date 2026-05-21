@@ -159,9 +159,9 @@ def spark():
 
 Call `reinit_local_metastore(spark, ALL_TABLES)` with a dict mapping each table name to
 a callable `(spark) -> DataFrame` (see `tests.data.factories`). It drops **all
-tables** in Spark's current database (usually `default`). It does not drop
-tables in other databases. It then writes each factory output as Delta
-(unqualified names in that database). The
+tables** in Spark's current schema (usually `default`). It does not drop
+tables in other schemas. It then writes each factory output as Delta
+(unqualified names in that schema). The
 `deletion_vectors` argument defaults to on; pass `deletion_vectors=False`
 to disable Delta deletion vectors.
 

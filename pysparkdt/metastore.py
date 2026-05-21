@@ -21,7 +21,6 @@ def _write_table(
 
 
 def _drop_all_tables(spark: SparkSession) -> None:
-    """Drop every table in Spark's current database."""
     existing_tables = spark.sql('SHOW TABLES').select('tableName').collect()
     for table in existing_tables:
         spark.sql(f'DROP TABLE `{table.tableName}`')
@@ -34,8 +33,8 @@ def reinit_local_metastore(
 ) -> None:
     """Re-initialize the local metastore from table factories.
 
-    Drops every table in Spark's current database, then writes each entry
-    as Delta in that database.
+    As a part of the re-initialization all existing tables are dropped
+    before the new ones are initialized.
 
     Parameters
     ----------
