@@ -16,8 +16,18 @@ _TABLES_DIR = f'{os.path.dirname(__file__)}/tables'
 
 def expected_output(spark: SparkSession):
     data = [
-        (0, datetime(2024, 1, 8, 11, 0, 0, tzinfo=timezone.utc), 'Jorge', 58.76),
-        (1, datetime(2024, 1, 11, 14, 28, 0, tzinfo=timezone.utc), 'Ricardo', 42.0),
+        (
+            0,
+            datetime(2024, 1, 8, 11, 0, 0, tzinfo=timezone.utc),
+            'Jorge',
+            58.76,
+        ),
+        (
+            1,
+            datetime(2024, 1, 11, 14, 28, 0, tzinfo=timezone.utc),
+            'Ricardo',
+            42.0,
+        ),
     ]
     return spark.createDataFrame(data, OUTPUT_SCHEMA)
 
