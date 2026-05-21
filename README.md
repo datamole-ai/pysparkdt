@@ -170,7 +170,7 @@ individual tests might affect each other by modifying tables.*
 
 ```python
 from myjobpackage.processing import process_data
-from myjobpackage.tables import EXAMPLE_INPUT_TABLE
+from myjobpackage.tables import INPUT_TABLE
 from pysparkdt import reinit_local_metastore
 from pyspark.testing import assertDataFrameEqual
 
@@ -184,7 +184,7 @@ def test_process_data(
 
     process_data(
         spark=spark,
-        input_table=EXAMPLE_INPUT_TABLE,
+        input_table=INPUT_TABLE,
         output_table='output',
     )
 
@@ -274,7 +274,7 @@ def test_process_data(spark: SparkSession):
     ...
     spark_processing = process_data(
         spark=spark,
-        input_table_name='example_input',
+        input_table_name='input',
         output_table='output',
         checkpoint_location=f'{TMP_DIR}/_checkpoint/output',
     )

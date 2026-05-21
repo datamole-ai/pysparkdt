@@ -1,7 +1,7 @@
 import os
 
 from myjobpackage.processing import process_data
-from myjobpackage.tables import EXAMPLE_INPUT_TABLE, EXAMPLE_OUTPUT_TABLE
+from myjobpackage.tables import INPUT_TABLE, OUTPUT_TABLE
 from pyspark.sql import SparkSession
 from pyspark.testing import assertDataFrameEqual
 from pytest import fixture
@@ -25,10 +25,10 @@ def test_process_data(
     reinit_local_metastore(spark, ALL_TABLES)
     process_data(
         spark=spark,
-        input_table=EXAMPLE_INPUT_TABLE,
-        output_table=EXAMPLE_OUTPUT_TABLE,
+        input_table=INPUT_TABLE,
+        output_table=OUTPUT_TABLE,
     )
-    output = spark.read.format('delta').table(EXAMPLE_OUTPUT_TABLE)
+    output = spark.read.format('delta').table(OUTPUT_TABLE)
     expected = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
     assertDataFrameEqual(
         actual=output.select(sorted(output.columns)),

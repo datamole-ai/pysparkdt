@@ -9,10 +9,10 @@ from pyspark.sql.types import (
     TimestampType,
 )
 
-EXAMPLE_INPUT_TABLE = 'example_input'
-EXAMPLE_OUTPUT_TABLE = 'output'
+INPUT_TABLE = 'input'
+OUTPUT_TABLE = 'output'
 
-EXAMPLE_INPUT_SCHEMA = StructType(
+INPUT_SCHEMA = StructType(
     [
         StructField('id', LongType(), nullable=False),
         StructField('time_utc', TimestampType(), nullable=False),
@@ -21,7 +21,7 @@ EXAMPLE_INPUT_SCHEMA = StructType(
     ]
 )
 
-EXAMPLE_OUTPUT_SCHEMA = StructType(
+OUTPUT_SCHEMA = StructType(
     [
         StructField('id', LongType(), nullable=False),
         StructField('time_utc', TimestampType(), nullable=False),
