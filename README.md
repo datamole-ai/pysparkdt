@@ -40,6 +40,7 @@ Delta tables for both batch and streaming workloads.
   3. [File Structure](#3-file-structure)
   4. [Tests](#4-tests)
 - [Advanced](#advanced)
+  - [Table Factories](#table-factories)
   - [Testing Stream Processing](#testing-stream-processing)
   - [Mocking Inside RDD and UDF Operations](#mocking-inside-rdd-and-udf-operations)
 - [Limitations](#limitations)
@@ -121,32 +122,17 @@ process_data(
 myjobpackage
 ├── __init__.py
 ├── entrypoint.py  # Databricks Notebook
-├── processing.py
-└── tables.py      # optional: names/schemas for tables the job uses
+└── processing.py
 tests
 ├── __init__.py
 ├── test_processing.py
 └── data
-    └── factories.py  # ALL_TABLES, table names, schemas, factories
-```
-
-Put table fixtures under `tests/data/` (typically `factories.py` with a dict
-such as `ALL_TABLES`). If your job package already defines table
-names/schemas (e.g. in a `tables.py` module), reuse them from there rather
-than redefining them in tests. If it doesn't — some projects intentionally
-keep schemas out of the source tree — define them alongside the factories.
-
-For fixtures too large to define inline, build factories from NDJSON files
-with `ndjson_table_factory(path)` or `ndjson_dir_to_tables(dir)`. NDJSON
-fixtures live alongside the factories:
-
-```
-tests/data/tables
-├── example_input.ndjson
-├── expected_output.ndjson
-└── schema
-    ├── example_input.json
-    └── expected_output.json
+    └── tables
+        ├── example_input.ndjson
+        ├── expected_output.ndjson
+        └── schema
+            ├── example_input.json
+            └── expected_output.json
 ```
 
 **Data Format**
@@ -156,9 +142,6 @@ tests/data/tables
   - If present, full schema must be provided (all columns included).
   - The format of the schema file is defined by [PySpark StructType JSON 
   representation](https://spark.apache.org/docs/latest/api/python/_modules/pyspark/sql/types.html#StructType.fromJson).
-  - When loaded via `ndjson_table_factory` / `ndjson_dir_to_tables`, the
-  sibling `<dir>/schema/<table>.json` is honoured automatically; pass an
-  in-code `StructType` via `schema=` to override.
 
 <div align="center">
 <strong>example_input.ndjson</strong>
@@ -222,6 +205,7 @@ from it and modify the types to the desired one.
 
 ```python
 DATA_DIR = f'{os.path.dirname(__file__)}/data'
+JSON_TABLES_DIR = f'{DATA_DIR}/tables'
 TMP_DIR = f'{DATA_DIR}/tmp'
 METASTORE_DIR = f'{TMP_DIR}/metastore'
 ```
@@ -239,41 +223,38 @@ def spark():
     yield from spark_base(METASTORE_DIR)
 ```
 
-**Table setup:** Use `reinit_local_metastore`
+**Metastore Initialization:** Use `reinit_local_metastore`
 
-Call `reinit_local_metastore(spark, ALL_TABLES)` with a dict mapping each table name to
-a callable `(spark) -> DataFrame` (see `tests.data.factories`). It drops **all
-tables** in Spark's current schema (usually `default`). It does not drop
-tables in other schemas. It then writes each factory output as Delta
-(unqualified names in that schema).
+At the beginning of your test method call `reinit_local_metastore` function 
+from the testing package to initialize the metastore with the tables from 
+your json folder (`JSON_TABLES_DIR`). You can also choose to enable or disable
+ deletion vectors for Delta tables (default: enabled). If the method is called
+  while the metastore already exists, it will delete all the existing tables
+   before initializing the new ones.
 
-*Alternatively, you can call this method only once per testing module,
-but then individual testing methods might affect each other by modifying
+*Alternatively, you can call this method only once per testing module, 
+but then individual testing methods might affect each other by modifying 
 metastore tables.*
 
 ```python
 from myjobpackage.processing import process_data
-from myjobpackage.tables import INPUT_TABLE
 from pysparkdt import reinit_local_metastore
 from pyspark.testing import assertDataFrameEqual
-
-from tests.data.factories import ALL_TABLES, EXPECTED_OUTPUT_TABLE
-
 
 def test_process_data(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, ALL_TABLES)
-
+    reinit_local_metastore(spark, JSON_TABLES_DIR, deletion_vectors=True)
+    
     process_data(
         spark=spark,
-        input_table=INPUT_TABLE,
+        input_table='example_input',
         output_table='output',
     )
-
+    
     output = spark.read.format('delta').table('output')
-    expected = spark.read.format('delta').table(EXPECTED_OUTPUT_TABLE)
-
+    expected = spark.read.format('delta').table('expected_output')
+    
     assertDataFrameEqual(
         actual=output.select(sorted(output.columns)),
         expected=expected.select(sorted(expected.columns)),
@@ -306,6 +287,36 @@ race conditions can occur if multiple test functions use the same tables.
 To mitigate this, make sure each test in the module uses its own set of tables.
 
 ## Advanced
+
+### Table Factories
+
+As an alternative to NDJSON files, you can define tables programmatically
+with `table_factories`: a dict mapping each table name to a callable
+`(spark) -> DataFrame`.
+This can be useful when you want richer fixture generation, or when your job
+package already defines table names and schemas that you want to reuse in tests.
+If your package does not define schemas, define them in the test file instead.
+
+```python
+from pyspark.sql import SparkSession
+from pysparkdt import reinit_local_metastore
+
+def _input(spark: SparkSession):
+    return spark.createDataFrame(...)
+
+def _expected_output(spark: SparkSession):
+    return spark.createDataFrame(...)
+
+TABLE_FACTORIES = {
+    'example_input': _input,
+    'expected_output': _expected_output,
+}
+
+reinit_local_metastore(spark, table_factories=TABLE_FACTORIES)
+```
+
+See [example/tests/test_processing_factories.py](example/tests/test_processing_factories.py)
+for a complete factory-based tests.
 
 ### Testing Stream Processing
 
@@ -357,7 +368,7 @@ def test_process_data(spark: SparkSession):
     ...
     spark_processing = process_data(
         spark=spark,
-        input_table_name='input',
+        input_table='example_input',
         output_table='output',
         checkpoint_location=f'{TMP_DIR}/_checkpoint/output',
     )

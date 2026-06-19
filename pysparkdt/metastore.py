@@ -8,6 +8,86 @@ from pyspark.sql.types import StructType
 TableFactory = Callable[[SparkSession], DataFrame]
 
 
+def reinit_local_metastore(
+    spark: SparkSession,
+    json_tables_dir: str | None = None,
+    deletion_vectors: bool = True,
+    *,
+    table_factories: dict[str, TableFactory] | None = None,
+) -> None:
+    """Re-initializes dynamic metastore acting as Databricks data catalog
+    using provided input delta table data in json format.
+
+    For each delta table there should be <table_name>.ndjson file in the
+    directory specified by json_tables_dir parameter. Optionally, there can
+    also be the schema file under <json_tables_dir>/schema/<table_name>.json.
+    The format of the schema file is defined by PySpark StructType json
+    representation.
+
+    A schema file for a loaded DataFrame "df" can be created using:
+        with(open(new_schema_file_path, 'w')) as file:
+            file.write(json.dumps(df.schema.jsonValue(), indent=4))
+
+    Example of a schema file:
+        {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "nullable": true,
+                    "metadata": {}
+                },
+                ...
+                {
+                    "name": "time",
+                    "type": "timestamp",
+                    "nullable": true,
+                    "metadata": {}
+                }
+            ]
+        }
+
+    As a part of the re-initialization all existing tables are dropped before
+    the new ones are initialized.
+
+    Alternatively, pass ``table_factories`` instead of ``json_tables_dir`` to
+    define tables programmatically.
+
+    Parameters
+    ----------
+    spark
+        Local Spark session.
+    json_tables_dir
+        Directory where the delta tables and their schemas are located.
+        Mutually exclusive with ``table_factories``.
+    deletion_vectors
+        Whether to enable deletion vectors for the delta tables.
+        Defaults to True.
+    table_factories
+        Mapping from table name to a callable that takes a ``SparkSession``
+        and returns a ``DataFrame``. Alternative to ``json_tables_dir``.
+        Mutually exclusive with ``json_tables_dir``.
+
+    Notes
+    -----
+    Exactly one of ``json_tables_dir`` and ``table_factories`` must be
+    provided.
+    """
+    if (json_tables_dir is None) == (table_factories is None):
+        raise ValueError(
+            'Exactly one of json_tables_dir or table_factories must be '
+            'provided'
+        )
+    if json_tables_dir is not None:
+        tables = _ndjson_dir_to_tables(json_tables_dir)
+    else:
+        tables = table_factories
+    _drop_all_tables(spark)
+    for name, factory in tables.items():
+        _write_table(spark, name, factory, deletion_vectors=deletion_vectors)
+
+
 def _write_table(
     spark: SparkSession,
     name: str,
@@ -24,38 +104,16 @@ def _write_table(
 
 
 def _drop_all_tables(spark: SparkSession) -> None:
-    existing_tables = spark.sql('SHOW TABLES').select('tableName').collect()
+    existing_tables = (
+        spark.sql('SHOW TABLES').select('tableName', 'isTemporary').collect()
+    )
     for table in existing_tables:
+        if table.isTemporary:
+            continue
         spark.sql(f'DROP TABLE `{table.tableName}`')
 
 
-def reinit_local_metastore(
-    spark: SparkSession,
-    tables: dict[str, TableFactory],
-    deletion_vectors: bool = True,
-) -> None:
-    """Re-initialize the local metastore from table factories.
-
-    As a part of the re-initialization all existing tables are dropped
-    before the new ones are initialized.
-
-    Parameters
-    ----------
-    spark
-        Local Spark session.
-    tables
-        Mapping from table name to a ``TableFactory`` (function that takes a
-        ``SparkSession`` and returns a ``DataFrame``).
-    deletion_vectors
-        Whether to enable deletion vectors for the delta tables.
-        Defaults to True.
-    """
-    _drop_all_tables(spark)
-    for name, factory in tables.items():
-        _write_table(spark, name, factory, deletion_vectors=deletion_vectors)
-
-
-def ndjson_table_factory(
+def _ndjson_table_factory(
     ndjson_path: str,
     schema: StructType | None = None,
 ) -> TableFactory:
@@ -94,7 +152,7 @@ def ndjson_table_factory(
     return factory
 
 
-def ndjson_dir_to_tables(
+def _ndjson_dir_to_tables(
     json_tables_dir: str,
 ) -> dict[str, TableFactory]:
     """Build a ``{table_name: TableFactory}`` dict from every ``*.ndjson``
@@ -105,9 +163,6 @@ def ndjson_dir_to_tables(
     under ``<json_tables_dir>/schema/<table_name>.json``. The format of
     the schema file is defined by PySpark ``StructType`` JSON
     representation.
-
-    Pipe the result straight into ``reinit_local_metastore`` (or merge
-    with a dict of code-defined factories).
 
     Parameters
     ----------
@@ -122,7 +177,7 @@ def ndjson_dir_to_tables(
         if name.endswith('.ndjson')
     ]
     return {
-        os.path.splitext(table_file)[0]: ndjson_table_factory(
+        os.path.splitext(table_file)[0]: _ndjson_table_factory(
             f'{json_tables_dir}/{table_file}'
         )
         for table_file in tables

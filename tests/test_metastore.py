@@ -1,0 +1,53 @@
+import os
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import (
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+)
+from pytest import fixture, raises
+
+from pysparkdt import reinit_local_metastore, spark_base
+
+DATA_DIR = f'{os.path.dirname(__file__)}/data'
+TMP_DIR = f'{DATA_DIR}/tmp'
+METASTORE_DIR = f'{TMP_DIR}/metastore_factories'
+
+TEST_TABLE = 'factory_test'
+TEST_SCHEMA = StructType(
+    [
+        StructField('id', LongType(), nullable=False),
+        StructField('name', StringType(), nullable=True),
+    ]
+)
+
+
+def _build_table(spark: SparkSession):
+    return spark.createDataFrame([(0, 'a'), (1, 'b')], TEST_SCHEMA)
+
+
+@fixture(scope='module')
+def spark():
+    yield from spark_base(METASTORE_DIR)
+
+
+def test_reinit_requires_exactly_one_source():
+    with raises(ValueError, match='Exactly one'):
+        reinit_local_metastore(None)  # type: ignore[arg-type]
+    with raises(ValueError, match='Exactly one'):
+        reinit_local_metastore(
+            None,  # type: ignore[arg-type]
+            '/dir',
+            table_factories={TEST_TABLE: _build_table},
+        )
+
+
+def test_table_factories(spark: SparkSession):
+    reinit_local_metastore(spark, table_factories={TEST_TABLE: _build_table})
+
+    rows = spark.read.format('delta').table(TEST_TABLE).collect()
+    assert len(rows) == 2
+    assert rows[0].id == 0
+    assert rows[0].name == 'a'
