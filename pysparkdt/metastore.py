@@ -12,7 +12,6 @@ def reinit_local_metastore(
     spark: SparkSession,
     json_tables_dir: str | None = None,
     deletion_vectors: bool = True,
-    *,
     table_factories: dict[str, TableFactory] | None = None,
 ) -> None:
     """Re-initializes dynamic metastore acting as Databricks data catalog
