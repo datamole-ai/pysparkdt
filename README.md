@@ -295,7 +295,6 @@ with `table_factories`: a dict mapping each table name to a callable
 `(spark) -> DataFrame`.
 This can be useful when you want richer fixture generation, or when your job
 package already defines table names and schemas that you want to reuse in tests.
-If your package does not define schemas, define them in the test file instead.
 
 ```python
 from pyspark.sql import SparkSession
