@@ -79,7 +79,7 @@ def _expected_output(spark: SparkSession) -> DataFrame:
     return spark.createDataFrame(data, OUTPUT_SCHEMA)
 
 
-ALL_TABLES = {
+TABLE_FACTORIES = {
     INPUT_TABLE: _input,
     EXPECTED_OUTPUT_TABLE: _expected_output,
 }
@@ -93,7 +93,7 @@ def spark():
 def test_process_data(
     spark: SparkSession,
 ):
-    reinit_local_metastore(spark, table_factories=ALL_TABLES)
+    reinit_local_metastore(spark, table_factories=TABLE_FACTORIES)
     process_data(
         spark=spark,
         input_table=INPUT_TABLE,
