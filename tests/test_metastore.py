@@ -11,10 +11,6 @@ from pytest import fixture, raises
 
 from pysparkdt import reinit_local_metastore, spark_base
 
-DATA_DIR = f'{os.path.dirname(__file__)}/data'
-TMP_DIR = f'{DATA_DIR}/tmp'
-METASTORE_DIR = f'{TMP_DIR}/metastore_factories'
-
 TEST_TABLE = 'factory_test'
 TEST_SCHEMA = StructType(
     [
@@ -29,8 +25,8 @@ def _build_table(spark: SparkSession):
 
 
 @fixture(scope='module')
-def spark():
-    yield from spark_base(METASTORE_DIR)
+def spark(tmp_path_factory):
+    yield from spark_base(tmp_path_factory.mktemp('metastore'))
 
 
 def test_reinit_requires_exactly_one_source():
