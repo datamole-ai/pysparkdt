@@ -50,7 +50,6 @@ jobs:
           key: poetry-${{ matrix.python-version }}-pyspark-${{ matrix.pyspark-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
-        if: steps.venv-cache.outputs.cache-hit != 'true'
         run: |
           poetry env use ${{ matrix.python-version }}
           poetry install
