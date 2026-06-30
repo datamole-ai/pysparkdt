@@ -40,6 +40,7 @@ Delta tables for both batch and streaming workloads.
   3. [File Structure](#3-file-structure)
   4. [Tests](#4-tests)
 - [Advanced](#advanced)
+  - [Table Factories](#table-factories)
   - [Testing Stream Processing](#testing-stream-processing)
   - [Mocking Inside RDD and UDF Operations](#mocking-inside-rdd-and-udf-operations)
 - [Limitations](#limitations)
@@ -287,6 +288,35 @@ To mitigate this, make sure each test in the module uses its own set of tables.
 
 ## Advanced
 
+### Table Factories
+
+As an alternative to NDJSON files, you can define tables programmatically
+with `table_factories`: a dict mapping each table name to a callable
+`(spark) -> DataFrame`.
+This can be useful when you want richer fixture generation, or when your job
+package already defines table names and schemas that you want to reuse in tests.
+
+```python
+from pyspark.sql import SparkSession
+from pysparkdt import reinit_local_metastore
+
+def _input(spark: SparkSession):
+    return spark.createDataFrame(...)
+
+def _expected_output(spark: SparkSession):
+    return spark.createDataFrame(...)
+
+TABLE_FACTORIES = {
+    'example_input': _input,
+    'expected_output': _expected_output,
+}
+
+reinit_local_metastore(spark, table_factories=TABLE_FACTORIES)
+```
+
+See [example/tests/test_processing_factories.py](example/tests/test_processing_factories.py)
+for a complete factory-based tests.
+
 ### Testing Stream Processing
 
 Let's now focus on a case where a job is reading input delta table using 
@@ -337,7 +367,7 @@ def test_process_data(spark: SparkSession):
     ...
     spark_processing = process_data(
         spark=spark,
-        input_table_name='example_input',
+        input_table='example_input',
         output_table='output',
         checkpoint_location=f'{TMP_DIR}/_checkpoint/output',
     )
