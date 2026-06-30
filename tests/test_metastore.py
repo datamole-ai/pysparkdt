@@ -45,4 +45,3 @@ def test_table_factories(spark: SparkSession):
     actual = spark.read.format('delta').table(TEST_TABLE)
     expected = _build_table(spark)
     assertDataFrameEqual(actual, expected)
-
