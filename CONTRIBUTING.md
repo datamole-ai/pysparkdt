@@ -6,25 +6,14 @@
 ## General workflow
 
 ### Environment setup
-pysparkdt uses [Poetry](https://python-poetry.org/) for managing dependencies.
-Follow the instructions on the Poetry website to install it.
-We recommend [pyenv](https://github.com/pyenv/pyenv)
-([installer](https://github.com/pyenv/pyenv-installer)) for managing Python versions.
+pysparkdt uses [uv](https://docs.astral.sh/uv/) for managing dependencies and Python versions.
+Follow the instructions on the uv website to install it.
 ```bash
-# Install Python 3.12
-pyenv install 3.12
-
-# Use pyenv's Python 3.12 for the current folder
-pyenv local 3.12
-
-# Create virtual environment (install all optional dependencies)
-poetry install --extras all
-
-# Activate Poetry virtual environment in the current shell
-poetry shell
+# Synchronize virtual environment (installs all dependencies including dev)
+uv sync --all-groups
 ```
 
-You can also use `poetry run` to run commands in the virtual environment without activating it in the current shell (via `poetry shell`).
+You can use `uv run` to run commands in the virtual environment (e.g., `uv run pytest tests`).
 
 
 ### Test the newly implemented changes
@@ -55,14 +44,14 @@ except if it would make the code less readable.
 The following commands can be used to properly format the code and check
 for linting errors with automatic fixing:
 ```bash
-poetry run ruff format .
-poetry run ruff check . --fix
+uv run ruff format .
+uv run ruff check . --fix
 ```
 The following commands can be used to check if the code is properly
 formatted and check for linting errors:
 ```bash
-poetry run ruff format --check .
-poetry run ruff check .
+uv run ruff format --check .
+uv run ruff check .
 ```
 
 All of the above code style requirements are enforced by the CI pipeline.
