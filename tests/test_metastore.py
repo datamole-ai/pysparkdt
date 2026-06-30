@@ -5,6 +5,7 @@ from pyspark.sql.types import (
     StructField,
     StructType,
 )
+from pyspark.testing import assertDataFrameEqual
 from pytest import fixture, raises
 
 from pysparkdt import reinit_local_metastore, spark_base
@@ -41,7 +42,7 @@ def test_reinit_requires_exactly_one_source():
 def test_table_factories(spark: SparkSession):
     reinit_local_metastore(spark, table_factories={TEST_TABLE: _build_table})
 
-    rows = spark.read.format('delta').table(TEST_TABLE).collect()
-    assert len(rows) == 2
-    assert rows[0].id == 0
-    assert rows[0].name == 'a'
+    actual = spark.read.format('delta').table(TEST_TABLE)
+    expected = _build_table(spark)
+    assertDataFrameEqual(actual, expected)
+
