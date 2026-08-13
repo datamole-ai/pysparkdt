@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     LongType,
@@ -6,7 +8,7 @@ from pyspark.sql.types import (
     StructType,
 )
 from pyspark.testing import assertDataFrameEqual
-from pytest import fixture, raises
+from pytest import TempPathFactory, fixture, raises
 
 from pysparkdt import reinit_local_metastore, spark_base
 
@@ -24,8 +26,26 @@ def _build_table(spark: SparkSession):
 
 
 @fixture(scope='module')
-def spark(tmp_path_factory):
-    yield from spark_base(tmp_path_factory.mktemp('metastore'))
+def spark(tmp_path_factory: TempPathFactory) -> Iterator[SparkSession]:
+    yield from spark_base(
+        tmp_path_factory.mktemp('metastore'),
+        master='local[2]',
+        spark_config={
+            'spark.master': 'local[1]',
+            'spark.default.parallelism': 2,
+            'spark.sql.shuffle.partitions': 2,
+            'spark.sql.session.timeZone': 'Europe/Prague',
+        },
+    )
+
+
+def test_spark_base_applies_resource_configuration(
+    spark: SparkSession,
+) -> None:
+    assert spark.sparkContext.master == 'local[2]'
+    assert spark.sparkContext.defaultParallelism == 2
+    assert spark.conf.get('spark.sql.shuffle.partitions') == '2'
+    assert spark.conf.get('spark.sql.session.timeZone') == 'UTC'
 
 
 def test_reinit_requires_exactly_one_source():
