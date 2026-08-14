@@ -1,6 +1,6 @@
+import os
 import shutil
 from collections.abc import Iterator, Mapping
-from os import PathLike
 
 from delta import configure_spark_with_delta_pip
 from pyspark import SparkContext
@@ -8,7 +8,7 @@ from pyspark.sql import SparkSession
 
 
 def spark_base(
-    metastore_dir: str | PathLike[str],
+    metastore_dir: str | os.PathLike[str],
     *,
     master: str | None = None,
     spark_config: Mapping[str, str | int | float | bool] | None = None,
@@ -37,8 +37,13 @@ def spark_base(
         configured default. This value takes precedence over ``spark.master``
         in ``spark_config``.
     spark_config : mapping, optional
-        Additional Spark builder configuration. The Delta and metastore
-        settings required by pysparkdt take precedence over conflicting keys.
+        Additional Spark builder configuration. Pysparkdt overrides the
+        following keys: ``spark.app.name``, ``spark.sql.warehouse.dir``,
+        ``spark.driver.extraJavaOptions``,
+        ``spark.sql.catalogImplementation``, ``spark.sql.extensions``,
+        ``spark.sql.catalog.spark_catalog``,
+        ``spark.sql.session.timeZone``, and ``spark.jars.packages``. If
+        ``master`` is provided, it also overrides ``spark.master``.
 
     Yields
     ------
@@ -61,7 +66,7 @@ def spark_base(
             },
         )
     """
-    metastore_dir = str(metastore_dir)
+    metastore_dir = os.fsdecode(metastore_dir)
     existing = SparkSession.getActiveSession()
     if existing:
         # Spark state can persist across test modules even when using

@@ -248,8 +248,13 @@ def spark():
 concurrent Spark operations. Benchmark the values for your workload and keep
 this configuration test-only; production-sized workloads usually need more
 parallelism. The dedicated `master` argument takes precedence over a
-`spark.master` entry in `spark_config`. Required Delta and metastore settings
-also take precedence over conflicting custom values.
+`spark.master` entry in `spark_config`.
+
+`pysparkdt` also overrides these `spark_config` keys to preserve its local
+Delta metastore behavior: `spark.app.name`, `spark.sql.warehouse.dir`,
+`spark.driver.extraJavaOptions`, `spark.sql.catalogImplementation`,
+`spark.sql.extensions`, `spark.sql.catalog.spark_catalog`,
+`spark.sql.session.timeZone`, and `spark.jars.packages`.
 
 **Metastore Initialization:** Use `reinit_local_metastore`
 
