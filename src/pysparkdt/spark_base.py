@@ -37,13 +37,15 @@ def spark_base(
         configured default. This value takes precedence over ``spark.master``
         in ``spark_config``.
     spark_config : mapping, optional
-        Additional Spark builder configuration. Pysparkdt overrides the
-        following keys: ``spark.app.name``, ``spark.sql.warehouse.dir``,
+        Additional Spark builder configuration. Values provided for the
+        following keys are ignored because pysparkdt replaces them with its
+        required values: ``spark.app.name``, ``spark.sql.warehouse.dir``,
         ``spark.driver.extraJavaOptions``,
         ``spark.sql.catalogImplementation``, ``spark.sql.extensions``,
         ``spark.sql.catalog.spark_catalog``,
         ``spark.sql.session.timeZone``, and ``spark.jars.packages``. If
-        ``master`` is provided, it also overrides ``spark.master``.
+        ``master`` is provided, a ``spark.master`` value in ``spark_config``
+        is also ignored.
 
     Yields
     ------

@@ -247,14 +247,17 @@ def spark():
 `local[2]` is a conservative starting point for tests that include streaming or
 concurrent Spark operations. Benchmark the values for your workload and keep
 this configuration test-only; production-sized workloads usually need more
-parallelism. The dedicated `master` argument takes precedence over a
-`spark.master` entry in `spark_config`.
+parallelism.
 
-`pysparkdt` also overrides these `spark_config` keys to preserve its local
-Delta metastore behavior: `spark.app.name`, `spark.sql.warehouse.dir`,
+Values provided for the following keys in `spark_config` are ignored because
+`pysparkdt` replaces them with the values required for its local Delta
+metastore: `spark.app.name`, `spark.sql.warehouse.dir`,
 `spark.driver.extraJavaOptions`, `spark.sql.catalogImplementation`,
 `spark.sql.extensions`, `spark.sql.catalog.spark_catalog`,
 `spark.sql.session.timeZone`, and `spark.jars.packages`.
+
+When the dedicated `master` argument is provided, a `spark.master` value in
+`spark_config` is also ignored.
 
 **Metastore Initialization:** Use `reinit_local_metastore`
 
