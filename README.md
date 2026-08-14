@@ -223,6 +223,42 @@ def spark():
     yield from spark_base(METASTORE_DIR)
 ```
 
+For small local fixtures, limit Spark's worker threads and partition counts to
+avoid scheduler overhead. Pass a master URL and additional Spark builder
+configuration to `spark_base`:
+
+```python
+@fixture(scope='module')
+def spark():
+    yield from spark_base(
+        METASTORE_DIR,
+        master='local[2]',
+        spark_config={
+            'spark.default.parallelism': 2,
+            'spark.sql.shuffle.partitions': 2,
+            'spark.sql.adaptive.coalescePartitions.parallelismFirst': False,
+            'spark.databricks.delta.snapshotPartitions': 1,
+            'spark.ui.enabled': False,
+            'spark.ui.showConsoleProgress': False,
+        },
+    )
+```
+
+`local[2]` is a conservative starting point for tests that include streaming or
+concurrent Spark operations. Benchmark the values for your workload and keep
+this configuration test-only; production-sized workloads usually need more
+parallelism.
+
+Values provided for the following keys in `spark_config` are ignored because
+`pysparkdt` replaces them with the values required for its local Delta
+metastore: `spark.app.name`, `spark.sql.warehouse.dir`,
+`spark.driver.extraJavaOptions`, `spark.sql.catalogImplementation`,
+`spark.sql.extensions`, `spark.sql.catalog.spark_catalog`,
+`spark.sql.session.timeZone`, and `spark.jars.packages`.
+
+When the dedicated `master` argument is provided, a `spark.master` value in
+`spark_config` is also ignored.
+
 **Metastore Initialization:** Use `reinit_local_metastore`
 
 At the beginning of your test method call `reinit_local_metastore` function 

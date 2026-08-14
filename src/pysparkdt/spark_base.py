@@ -1,12 +1,18 @@
+import os
 import shutil
-from typing import Iterator
+from collections.abc import Iterator, Mapping
 
 from delta import configure_spark_with_delta_pip
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 
 
-def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
+def spark_base(
+    metastore_dir: str | os.PathLike[str],
+    *,
+    master: str | None = None,
+    spark_config: Mapping[str, str | int | float | bool] | None = None,
+) -> Iterator[SparkSession]:
     """Creates and yields a Spark session configured for local run with
     dynamically created local metastore acting as the Databricks data catalog.
 
@@ -24,8 +30,22 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
 
     Parameters
     ----------
-    metastore_dir : str
+    metastore_dir : str or path-like
         The directory to use for the dynamically created metastore.
+    master : str, optional
+        Spark master URL, for example ``local[2]``. If omitted, Spark uses its
+        configured default. This value takes precedence over ``spark.master``
+        in ``spark_config``.
+    spark_config : mapping, optional
+        Additional Spark builder configuration. Values provided for the
+        following keys are ignored because pysparkdt replaces them with its
+        required values: ``spark.app.name``, ``spark.sql.warehouse.dir``,
+        ``spark.driver.extraJavaOptions``,
+        ``spark.sql.catalogImplementation``, ``spark.sql.extensions``,
+        ``spark.sql.catalog.spark_catalog``,
+        ``spark.sql.session.timeZone``, and ``spark.jars.packages``. If
+        ``master`` is provided, a ``spark.master`` value in ``spark_config``
+        is also ignored.
 
     Yields
     ------
@@ -39,8 +59,16 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
 
     @fixture(scope='module')
     def spark():
-        yield from spark_base(METASTORE_DIR)
+        yield from spark_base(
+            METASTORE_DIR,
+            master='local[2]',
+            spark_config={
+                'spark.default.parallelism': 2,
+                'spark.sql.shuffle.partitions': 2,
+            },
+        )
     """
+    metastore_dir = os.fsdecode(metastore_dir)
     existing = SparkSession.getActiveSession()
     if existing:
         # Spark state can persist across test modules even when using
@@ -48,9 +76,15 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
         # to avoid metastore reuse issues.
         _teardown_spark_session(existing, metastore_dir)
 
-    #  Create a spark session with Delta
+    # Create a Spark session with caller settings and required Delta defaults.
+    builder = SparkSession.builder
+    for key, value in (spark_config or {}).items():
+        builder = builder.config(key, value)
+    if master is not None:
+        builder = builder.master(master)
+
     builder = (
-        SparkSession.builder.appName('test_app')
+        builder.appName('test_app')
         .config('spark.sql.warehouse.dir', metastore_dir)
         .config(
             'spark.driver.extraJavaOptions',
@@ -79,10 +113,8 @@ def spark_base(metastore_dir: str) -> Iterator[SparkSession]:
     _teardown_spark_session(session, metastore_dir)
 
 
-def _teardown_spark_session(
-    session: SparkSession, metastore_dir: str = None
-) -> None:
-    """Stop the Spark session and reset the gateway and JVM"""
+def _teardown_spark_session(session: SparkSession, metastore_dir: str) -> None:
+    """Stop the Spark session and reset the gateway and JVM."""
     session.stop()
     SparkContext._gateway = None
     SparkContext._jvm = None

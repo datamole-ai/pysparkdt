@@ -10,7 +10,7 @@ TableFactory = Callable[[SparkSession], DataFrame]
 
 def reinit_local_metastore(
     spark: SparkSession,
-    json_tables_dir: str | None = None,
+    json_tables_dir: str | os.PathLike[str] | None = None,
     deletion_vectors: bool = True,
     table_factories: dict[str, TableFactory] | None = None,
 ) -> None:
@@ -79,8 +79,9 @@ def reinit_local_metastore(
             'provided'
         )
     if json_tables_dir is not None:
-        tables = _ndjson_dir_to_tables(json_tables_dir)
+        tables = _ndjson_dir_to_tables(os.fsdecode(json_tables_dir))
     else:
+        assert table_factories is not None
         tables = table_factories
     _drop_all_tables(spark)
     for name, factory in tables.items():
