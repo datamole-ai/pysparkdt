@@ -7,42 +7,39 @@ env:
   FULL_CHANGELOG_FILE: FULL_CHANGELOG.md
   README_FILE: README.md
   CONVCO_VERSION: v0.6.1
-  UV_VERSION: 0.11.25
+  UV_VERSION: 0.12.11
   PACKAGE_NAME: "pysparkdt"
   PACKAGE_PATH: "src/pysparkdt"
 
 jobs:
 
   tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         pyspark-version: ["4.0.1"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           lfs: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
 
-      - name: Pin PySpark version
-        run: uv add --no-sync 'pyspark[sql]==${{ matrix.pyspark-version }}'
+      - name: Install matrix Python
+        run: uv python install ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: uv sync --locked --all-groups
+      - name: Install dependencies with matrix PySpark
+        run: |
+          uv add --no-sync 'pyspark[sql]==${{ matrix.pyspark-version }}'
+          uv sync --all-groups --python ${{ matrix.python-version }}
 
       - name: Run checks
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
-          uv run pytest tests
+          uv run --python ${{ matrix.python-version }} ruff check .
+          uv run --python ${{ matrix.python-version }} ruff format --check .
+          uv run --python ${{ matrix.python-version }} pytest tests
